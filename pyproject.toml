@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mazen-real-time-commerce"
+version = "0.1.0"
+description = "Real-time commerce CDC and analytics data platform"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+dependencies = []
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
