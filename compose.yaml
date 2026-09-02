@@ -1,0 +1,36 @@
+name: real-time-commerce
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: commerce-postgres
+    environment:
+      POSTGRES_DB: ${COMMERCE_POSTGRES_DB:-commerce}
+      POSTGRES_USER: ${COMMERCE_POSTGRES_USER:-commerce_app}
+      POSTGRES_PASSWORD: ${COMMERCE_POSTGRES_PASSWORD:-commerce_dev_password}
+    ports:
+      - "127.0.0.1:${COMMERCE_POSTGRES_PORT:-5433}:5432"
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+      - -c
+      - max_replication_slots=10
+      - -c
+      - max_wal_senders=10
+    volumes:
+      - commerce_postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${COMMERCE_POSTGRES_USER:-commerce_app} -d ${COMMERCE_POSTGRES_DB:-commerce}
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  commerce_postgres_data:
+    name: commerce-postgres-data
