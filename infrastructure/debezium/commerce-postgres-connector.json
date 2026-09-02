@@ -1,0 +1,24 @@
+{
+  "name": "commerce-postgres-cdc",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "set-by-register-script",
+    "database.password": "set-by-register-script",
+    "database.dbname": "commerce",
+    "topic.prefix": "commerce",
+    "schema.include.list": "commerce",
+    "table.include.list": "commerce.customers,commerce.products,commerce.orders,commerce.order_items,commerce.payments,commerce.shipments",
+    "plugin.name": "pgoutput",
+    "slot.name": "commerce_debezium_slot",
+    "publication.name": "commerce_debezium_publication",
+    "publication.autocreate.mode": "filtered",
+    "snapshot.mode": "initial",
+    "decimal.handling.mode": "string",
+    "time.precision.mode": "adaptive_time_microseconds",
+    "tombstones.on.delete": "false",
+    "heartbeat.interval.ms": "5000",
+    "provide.transaction.metadata": "true"
+  }
+}
