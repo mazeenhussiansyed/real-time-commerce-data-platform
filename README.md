@@ -4,47 +4,41 @@ A Data Engineering portfolio project that captures commerce database changes in 
 
 ## Current status
 
-Milestone M00 is in progress.
+Milestones M00 and M01 are complete:
 
-The initial repository and Python environment have been created. No pipeline performance or data-quality metrics have been measured yet.
+- project scope and evidence contract;
+- local Python package;
+- PostgreSQL operational source;
+- six-table relational commerce model;
+- deterministic synthetic-data generation;
+- atomic source loading;
+- overwrite protection;
+- source profiling and integrity validation;
+- automated unit and PostgreSQL integration tests.
 
-## Business problem
+Change Data Capture and Kafka event transport remain planned for M02.
 
-An online retailer continuously creates and updates:
+## Verified M01 source results
 
-- customers;
-- products;
-- orders;
-- order items;
-- payments;
-- shipments.
+| Result | Verified value |
+|---|---:|
+| Customers | 1,000 |
+| Products | 250 |
+| Orders | 5,000 |
+| Order items | 12,500 |
+| Payments | 5,000 |
+| Shipments | 2,499 |
+| Total stored rows | 26,249 |
+| Total order value | $5,053,882.86 |
+| Average order value | $1,010.78 |
+| Referential-integrity failures | 0 |
+| Order-total mismatches | 0 |
+| Payment-total mismatches | 0 |
+| Automated tests | 10/10 passed |
+| PostgreSQL WAL level | logical |
+| Baseline load duration | 1.451 seconds |
 
-Analytics teams need trustworthy and timely warehouse tables without querying the operational application database directly.
-
-The platform will capture database changes, process them incrementally and publish analytics-ready datasets while handling duplicates, invalid records, late events and pipeline failures.
-
-## Planned architecture
+The controlled baseline is reproducible with seed `20260902` and SHA-256 fingerprint:
 
 ```text
-PostgreSQL commerce database
-            |
-            v
-       Debezium CDC
-            |
-            v
-        Kafka topics
-            |
-            v
-Spark Structured Streaming
-            |
-            v
-Bronze data lake storage
-            |
-            v
-Snowflake analytics warehouse
-            |
-            v
-dbt models, tests and documentation
-            |
-            v
-Power BI operations dashboard
+9616a65028c5f571e5cc4d4c5ced080977fbea1bf3f1117d57b80b67b49d83e5

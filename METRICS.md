@@ -2,40 +2,71 @@
 
 Only rows marked **Yes** may be used as measured project evidence.
 
-## M00 foundation verification
+## M00 environment verification
 
 | Metric | Configuration | Result | Evidence command | Verified |
 |---|---|---:|---|---|
-| Python environment | local virtual environment | 3.14.4 | `python --version` | Yes, 2026-09-02 |
-| Package import | editable local installation | 0.1.0 | `python -c "import commerce_pipeline; print(commerce_pipeline.__version__)"` | Yes, 2026-09-02 |
+| Python runtime | local virtual environment | 3.14.4 | `python --version` | Yes, 2026-09-02 |
+| Package import | editable installation | 0.1.0 | package import command | Yes, 2026-09-02 |
 
-## Planned pipeline measurements
+## M01 operational source verification
 
 | Metric | Configuration | Result | Evidence command | Verified |
 |---|---|---:|---|---|
-| Source transactions | controlled commerce workload | not measured | future M01 command | No |
-| CDC capture completeness | PostgreSQL to Kafka | not measured | future M02 command | No |
-| Streaming throughput | Kafka to Bronze | not measured | future M03 command | No |
-| Median processing latency | event creation to Bronze | not measured | future M03 command | No |
-| P95 processing latency | event creation to Bronze | not measured | future M03 command | No |
-| Duplicate-event handling | idempotent processing | not measured | future M03 command | No |
-| Invalid-event quarantine | controlled invalid events | not measured | future M03 command | No |
-| Warehouse reconciliation | source to analytics models | not measured | future M06 command | No |
-| Pipeline recovery | controlled service interruption | not measured | future M06 command | No |
-| dbt model tests | facts and dimensions | not measured | future M04 command | No |
-| Complete automated suite | unit and live integration tests | not measured | future verification command | No |
+| PostgreSQL source tables | `commerce` schema | 6 | `python scripts/wait_for_postgres.py` | Yes, 2026-09-02 |
+| PostgreSQL WAL level | CDC-ready configuration | logical | `python scripts/profile_source.py` | Yes, 2026-09-02 |
+| Customers | deterministic seed `20260902` | 1,000 | `python scripts/profile_source.py` | Yes, 2026-09-02 |
+| Products | deterministic seed `20260902` | 250 | `python scripts/profile_source.py` | Yes, 2026-09-02 |
+| Orders | deterministic seed `20260902` | 5,000 | `python scripts/profile_source.py` | Yes, 2026-09-02 |
+| Order items | one to four items per order | 12,500 | `python scripts/profile_source.py` | Yes, 2026-09-02 |
+| Payments | one payment per order | 5,000 | `python scripts/profile_source.py` | Yes, 2026-09-02 |
+| Shipments | processing, shipped and delivered orders | 2,499 | `python scripts/profile_source.py` | Yes, 2026-09-02 |
+| Total stored rows | all six source tables | 26,249 | source profile counts | Yes, 2026-09-02 |
+| Total order value | synthetic USD orders | $5,053,882.86 | `python scripts/profile_source.py` | Yes, 2026-09-02 |
+| Average order value | 5,000 orders | $1,010.78 | `python scripts/profile_source.py` | Yes, 2026-09-02 |
+| Referential-integrity failures | five relationship checks | 0 | `python scripts/profile_source.py` | Yes, 2026-09-02 |
+| Order-total mismatches | orders compared with item totals | 0 | `python scripts/profile_source.py` | Yes, 2026-09-02 |
+| Payment-total mismatches | orders compared with payments | 0 | `python scripts/profile_source.py` | Yes, 2026-09-02 |
+| Dataset fingerprint | SHA-256 | `9616a650...b49d83e5` | `python scripts/seed_source.py --reset` | Yes, 2026-09-02 |
+| Baseline load duration | local Docker PostgreSQL | 1.451 seconds | `python scripts/seed_source.py --reset` | Yes, 2026-09-02 |
+| Existing-data protection | seed without `--reset` | overwrite rejected | `python scripts/seed_source.py` | Yes, 2026-09-02 |
+| Complete M01 test suite | unit and live PostgreSQL tests | 10/10 passed | `RUN_POSTGRES_INTEGRATION=1 python -m unittest discover -s tests -v` | Yes, 2026-09-02 |
+
+## Planned CDC and streaming metrics
+
+| Metric | Result | Evidence command | Verified |
+|---|---:|---|---|
+| CDC events produced | Not measured | future M02 command | No |
+| Source-to-topic completeness | Not measured | future M02 evaluation | No |
+| Duplicate business records after replay | Not measured | future M03 evaluation | No |
+| Invalid events quarantined | Not measured | future M03 evaluation | No |
+| Streaming throughput | Not measured | future M03 benchmark | No |
+| Median end-to-end latency | Not measured | future M03 benchmark | No |
+| P95 end-to-end latency | Not measured | future M03 benchmark | No |
+
+## Planned warehouse and reliability metrics
+
+| Metric | Result | Evidence command | Verified |
+|---|---:|---|---|
+| Source-to-warehouse reconciliation | Not measured | future M04 evaluation | No |
+| dbt tests passed | Not measured | future M04 command | No |
+| Backfill duplicate records | Not measured | future M05 evaluation | No |
+| Controlled failure recovery time | Not measured | future M06 benchmark | No |
+| Complete automated suite | Not measured | future final test command | No |
 
 ## Integrity rules
 
-- Do not replace targets with results without running the evidence command.
-- Do not remove failed records from reported totals.
-- Report the workload size with performance results.
-- Report latency as a local or cloud-specific measurement.
-- Record configuration changes before comparing results.
-- Preserve failed evaluations and explain their causes.
-- Do not claim exactly-once delivery unless it is demonstrated.
-- Do not claim Snowflake, AWS, Airflow, Kafka or Spark experience until the corresponding implementation works.
+- Do not replace missing results with targets.
+- Do not report throughput without the event count and environment.
+- Do not report latency without stating whether the run was cold or warm.
+- A replay is successful only when it creates no duplicate business records.
+- CDC completeness requires reconciling source changes with consumed events.
+- A quarantined record must contain a reason and pipeline-run identifier.
+- Cloud services may be listed only after they are used successfully.
+- Local benchmarks must not be presented as universal production performance.
 
 ## Scope warning
 
-Initial measurements will use a controlled portfolio workload. They will verify pipeline behavior and reproducibility but will not prove unlimited production-scale performance.
+This project uses controlled synthetic commerce data and a local development environment.
+
+The results verify source modeling, deterministic generation, integrity controls and reproducibility. They do not prove internet-scale performance or production readiness.
