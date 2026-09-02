@@ -9,6 +9,7 @@ description = "Real-time commerce CDC and analytics data platform"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
 dependencies = [
+    "confluent-kafka==2.15.0",
     "psycopg[binary]>=3.2,<4",
 ]
 
