@@ -62,7 +62,7 @@ Only rows marked **Yes** may be used as measured project evidence.
 | Scala runtime | Spark 4.2.0 image | 2.13.18 | Spark version command | Yes, 2026-09-02 |
 | Java runtime | Spark 4.2.0 image | OpenJDK 21.0.11 | Spark version command | Yes, 2026-09-02 |
 | Spark Kafka connector | Scala 2.13 artifact | `4.2.0` | Spark dependency resolution | Yes, 2026-09-02 |
-| Kafka topics consumed | six commerce topics | 6 | `python scripts/profile_bronze.py` through Spark | Yes, 2026-09-03 |
+| Kafka topics consumed | six commerce topics | 6 | Bronze profile command | Yes, 2026-09-03 |
 | Kafka partitions consumed | three per source topic | 18 | Bronze profile command | Yes, 2026-09-03 |
 | Initial Bronze input events | Kafka history checkpoint | 26,264 | first Bronze stream result | Yes, 2026-09-02 |
 | Initial Bronze records written | valid Kafka events | 26,264 | first Bronze stream result | Yes, 2026-09-02 |
@@ -91,22 +91,79 @@ Only rows marked **Yes** may be used as measured project evidence.
 | Quarantine records | final M03 checkpoint | 2 | Bronze profile command | Yes, 2026-09-03 |
 | Quarantine duplicate event IDs | final M03 checkpoint | 0 | Bronze profile command | Yes, 2026-09-03 |
 | Connector latency sample | live create/update/delete events | 21 | Bronze profile command | Yes, 2026-09-03 |
-| Median connector latency | connector timestamp minus source timestamp | 399 ms | Bronze profile command | Yes, 2026-09-03 |
-| P95 connector latency | connector timestamp minus source timestamp | 471 ms | Bronze profile command | Yes, 2026-09-03 |
-| Maximum connector latency | connector timestamp minus source timestamp | 503 ms | Bronze profile command | Yes, 2026-09-03 |
+| Median connector latency | connector minus source timestamp | 399 ms | Bronze profile command | Yes, 2026-09-03 |
+| P95 connector latency | connector minus source timestamp | 471 ms | Bronze profile command | Yes, 2026-09-03 |
+| Maximum connector latency | connector minus source timestamp | 503 ms | Bronze profile command | Yes, 2026-09-03 |
 | Complete M03 test suite | unit plus all live integrations | 27/27 passed | complete live test command | Yes, 2026-09-03 |
 | Complete M03 test duration | local Docker environment | 29.783 seconds | complete live test command | Yes, 2026-09-03 |
 
-## Planned warehouse and orchestration metrics
+## M04 warehouse and dbt analytics verification
+
+| Metric | Configuration | Result | Evidence command | Verified |
+|---|---|---:|---|---|
+| Warehouse runtime | local analytics service | PostgreSQL 17 | `python scripts/wait_for_warehouse.py` | Yes, 2026-09-03 |
+| Warehouse schemas | raw, staging, snapshots, analytics and audit | 5 | `python scripts/wait_for_warehouse.py` | Yes, 2026-09-03 |
+| Initial Bronze records loaded | Spark JDBC batch | 26,273 | warehouse load result | Yes, 2026-09-03 |
+| Initial target records | `raw.bronze_events` | 26,273 | warehouse load result | Yes, 2026-09-03 |
+| Initial missing target records | source event IDs compared with target | 0 | warehouse load result | Yes, 2026-09-03 |
+| Initial warehouse load duration | local Spark `local[2]` | 14.863 seconds | warehouse load result | Yes, 2026-09-03 |
+| Initial insertion throughput | 26,273 records, local Docker | 1,767.66 records/second | warehouse load result | Yes, 2026-09-03 |
+| Idempotent rerun inserted records | unchanged Bronze input | 0 | second warehouse load result | Yes, 2026-09-03 |
+| Idempotent rerun duration | existing target IDs | 8.041 seconds | second warehouse load result | Yes, 2026-09-03 |
+| Controlled incremental load | one customer update | 1 record | incremental warehouse load result | Yes, 2026-09-03 |
+| Final warehouse events | after complete M04 verification | 26,277 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Final unique warehouse event IDs | event-ID deduplication | 26,277 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Final duplicate warehouse event IDs | final M04 profile | 0 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Required warehouse metadata nulls | six required fields | 0 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Warehouse load audit runs | initial, rerun and incremental loads | 5 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Reconstructed current tables | six source entities | 6 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Reconstructed customers | latest non-deleted records | 1,000 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Reconstructed products | latest non-deleted records | 250 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Reconstructed orders | latest non-deleted records | 5,000 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Reconstructed order items | latest non-deleted records | 12,500 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Reconstructed payments | latest non-deleted records | 5,000 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Reconstructed shipments | latest non-deleted records | 2,499 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| dbt Core version | isolated Python 3.13 image | 1.11.14 | `dbt --version` container command | Yes, 2026-09-03 |
+| dbt PostgreSQL adapter | isolated dbt image | 1.11.0 | `dbt --version` container command | Yes, 2026-09-03 |
+| dbt models | staging, intermediate and analytics | 22 | complete dbt build | Yes, 2026-09-03 |
+| dbt view models | staging and intermediate | 13 | complete dbt build | Yes, 2026-09-03 |
+| dbt table models | dimensions, facts and marts | 9 | complete dbt build | Yes, 2026-09-03 |
+| dbt snapshots | customer SCD Type 2 | 1 | complete dbt build | Yes, 2026-09-03 |
+| Customer dimension versions | 1,000 customers | 1,001 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Current customer versions | null `dbt_valid_to` | 1,000 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Historical customer versions | controlled customer update | 1 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Overlapping customer histories | SCD validity test | 0 | dbt history test | Yes, 2026-09-03 |
+| Product dimension records | all current products | 250 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Active product records | current active products | 240 | dimension verification query | Yes, 2026-09-03 |
+| Order facts | one row per order | 5,000 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Order-item facts | one row per order item | 12,500 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Payment facts | one row per payment | 5,000 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Shipment facts | one row per shipment | 2,499 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Daily reporting rows | 2026-01-01 through 2026-01-18 | 18 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Customer-value mart rows | one current row per customer | 1,000 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Product-performance mart rows | one row per product | 250 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Total order value | order facts | $5,053,882.86 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Total order-item value | item facts | $5,053,882.86 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Total payment value | payment facts | $5,053,882.86 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Order-to-item difference | financial reconciliation | $0.00 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Order-to-payment difference | financial reconciliation | $0.00 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Daily mart count differences | orders, payments and shipments | 0 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| Daily mart financial differences | orders and payments | $0.00 | `python scripts/profile_warehouse.py` | Yes, 2026-09-03 |
+| dbt data tests | schema, relationship and business tests | 92/92 passed | `dbt test` container command | Yes, 2026-09-03 |
+| Complete dbt build | models, snapshot and tests | 115/115 passed | `dbt build` container command | Yes, 2026-09-03 |
+| dbt execution duration | local warm warehouse | 2.16 seconds | timed complete dbt build | Yes, 2026-09-03 |
+| dbt Docker wall time | complete local command | 4.630 seconds | timed complete dbt build | Yes, 2026-09-03 |
+| Complete M04 Python suite | unit plus all live integrations | 33/33 passed | complete live test command | Yes, 2026-09-03 |
+| Complete M04 test duration | local Docker environment | 30.976 seconds | complete live test command | Yes, 2026-09-03 |
+
+## Planned orchestration metrics
 
 | Metric | Result | Evidence command | Verified |
 |---|---:|---|---|
-| Bronze-to-warehouse reconciliation | Not measured | future M04 evaluation | No |
-| dbt tests passed | Not measured | future M04 command | No |
-| SCD Type 2 history accuracy | Not measured | future M04 evaluation | No |
-| Warehouse duplicate business keys | Not measured | future M04 evaluation | No |
 | Backfill duplicate records | Not measured | future M05 evaluation | No |
 | Airflow DAG success and retry behavior | Not measured | future M05 evaluation | No |
+| Airflow pipeline duration | Not measured | future M05 benchmark | No |
+| Failed-run audit records | Not measured | future M05 evaluation | No |
 
 ## Planned reliability metrics
 
@@ -126,6 +183,7 @@ Only rows marked **Yes** may be used as measured project evidence.
 - A checkpoint rerun is successful only when no already-committed Kafka offsets are appended again.
 - Checkpoint idempotency must not be presented as protection after intentional checkpoint deletion.
 - CDC completeness requires reconciling source rows or changes with Kafka events.
+- Warehouse event history counts must not be confused with current business-record counts.
 - A quarantined record must preserve its event ID, original value and failure reason.
 - Cloud services may be listed only after they are used successfully.
 - Local benchmarks must not be presented as universal production performance.
@@ -134,6 +192,6 @@ Only rows marked **Yes** may be used as measured project evidence.
 
 This project uses controlled synthetic commerce data and a local Docker development environment.
 
-The completed measurements verify source modeling, deterministic generation, integrity controls, PostgreSQL logical replication, Debezium CDC, Kafka transport, Spark Structured Streaming, checkpoint continuation, partitioned Parquet Bronze storage, metadata preservation and invalid-event quarantine.
+The completed measurements verify source modeling, deterministic generation, PostgreSQL logical replication, Debezium CDC, Kafka transport, Spark Structured Streaming, checkpoint continuation, Bronze storage, quarantine handling, incremental warehouse loading, dbt transformations, SCD Type 2 history, dimensional modeling, reporting marts and financial reconciliation.
 
-They do not prove internet-scale performance, production-cluster scalability, arbitrary replay safety after checkpoint deletion, warehouse accuracy or cloud-scale latency.
+They do not prove internet-scale performance, production-cluster scalability, arbitrary replay safety after checkpoint deletion, Snowflake execution or cloud-scale latency.
