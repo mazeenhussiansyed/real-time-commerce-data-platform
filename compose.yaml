@@ -31,6 +31,28 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  warehouse:
+    image: postgres:17-alpine
+    container_name: commerce-warehouse
+    environment:
+      POSTGRES_DB: ${WAREHOUSE_POSTGRES_DB:-analytics}
+      POSTGRES_USER: ${WAREHOUSE_POSTGRES_USER:-warehouse_app}
+      POSTGRES_PASSWORD: ${WAREHOUSE_POSTGRES_PASSWORD:-warehouse_dev_password}
+    ports:
+      - "127.0.0.1:${WAREHOUSE_POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - commerce_warehouse_data:/var/lib/postgresql/data
+      - ./infrastructure/warehouse/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${WAREHOUSE_POSTGRES_USER:-warehouse_app} -d ${WAREHOUSE_POSTGRES_DB:-analytics}
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
   kafka:
     image: apache/kafka:4.1.2
     container_name: commerce-kafka
@@ -138,6 +160,9 @@ services:
 volumes:
   commerce_postgres_data:
     name: commerce-postgres-data
+
+  commerce_warehouse_data:
+    name: commerce-warehouse-data
 
   commerce_kafka_data:
     name: commerce-kafka-data

@@ -75,7 +75,7 @@
 
 ### Verified M03 outcome
 
-- 26,270 final Bronze records.
+- 26,270 Bronze records at the final M03 checkpoint.
 - 26,270 unique event identifiers.
 - Zero duplicate Bronze event identifiers.
 - Six source tables represented.
@@ -89,18 +89,54 @@
 - P95 connector latency of 471 ms.
 - 27/27 unit and live integration tests passed.
 
-## M04 - Warehouse and dbt analytics models
+## M04 - Warehouse and dbt analytics models - Complete
 
-- Add an analytical warehouse target.
-- Load validated records incrementally from Bronze.
-- Build dbt staging models.
-- Create customer and product dimensions.
-- Implement SCD Type 2 history where appropriate.
-- Create order, payment and shipment fact models.
-- Add dbt uniqueness, relationship, accepted-value and not-null tests.
-- Generate dbt documentation and lineage.
-- Reconcile source, Bronze and warehouse totals.
-- Publish Power BI-ready analytics marts.
+- Added a separate PostgreSQL 17 analytics warehouse.
+- Created raw, staging, snapshots, analytics and audit schemas.
+- Loaded Spark Bronze events incrementally through JDBC.
+- Added append-only event-ID deduplication.
+- Recorded warehouse load-run audit records.
+- Verified an idempotent warehouse rerun with zero inserted records.
+- Parsed Bronze JSON into six typed dbt staging models.
+- Reconstructed the latest non-deleted state of all six source tables.
+- Created customer and product dimensions.
+- Created order, order-item, payment and shipment fact tables.
+- Implemented customer SCD Type 2 history.
+- Verified a controlled Chicago-to-Boston customer change.
+- Created daily commerce, customer-value and product-performance marts.
+- Added dbt uniqueness, relationship, accepted-value and not-null tests.
+- Added financial, reporting and SCD history reconciliation tests.
+- Added a warehouse profiling command.
+- Added live warehouse integration tests.
+- Documented verified local warehouse and dbt measurements.
+
+### Verified M04 outcome
+
+- 26,277 final warehouse event records.
+- 26,277 unique warehouse event IDs.
+- Zero duplicate warehouse event IDs.
+- Zero missing required warehouse metadata values.
+- Zero missing Bronze-to-warehouse target records.
+- Initial local load throughput of 1,767.66 records/second.
+- Idempotent warehouse rerun inserted zero records.
+- Six reconstructed current-state tables matched the source baseline.
+- 1,001 customer dimension rows for 1,000 customers.
+- One verified historical customer version.
+- Zero overlapping SCD validity periods.
+- 5,000 order facts.
+- 12,500 order-item facts.
+- 5,000 payment facts.
+- 2,499 shipment facts.
+- $5,053,882.86 order, item and payment totals.
+- $0.00 order-to-item difference.
+- $0.00 order-to-payment difference.
+- 18 daily reporting rows.
+- 1,000 customer-value rows.
+- 250 product-performance rows.
+- 22 dbt models and one snapshot.
+- 92/92 dbt data tests passed.
+- 115/115 complete dbt build resources passed.
+- 33/33 Python and live integration tests passed.
 
 ## M05 - Airflow orchestration and backfills
 
@@ -143,9 +179,11 @@
 - Kafka offsets remain auditable.
 - Duplicate Bronze processing is prevented during normal checkpoint recovery.
 - Invalid events are quarantined with a reason.
-- Source, Bronze and warehouse totals reconcile.
+- Bronze and warehouse event totals reconcile.
+- Reconstructed warehouse tables match the operational source.
 - Historical dimension changes remain auditable.
 - Pipeline reruns do not create duplicate warehouse records.
+- Financial facts and reporting marts reconcile.
 - Failure recovery is demonstrated.
 - Dashboard models are reproducible.
 - Resume claims use only verified values from `METRICS.md`.
@@ -158,4 +196,5 @@
 - Do not report throughput without the event count and execution environment.
 - Local Docker results must not be presented as cloud-scale performance.
 - Checkpoint idempotency must not be described as arbitrary replay protection.
+- Warehouse event counts must be distinguished from current business-record counts.
 - Cloud technologies may be claimed only after successful implementation and verification.

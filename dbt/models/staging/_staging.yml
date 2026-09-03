@@ -1,0 +1,84 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Immutable Bronze CDC events loaded from Spark.
+    database: analytics
+    schema: raw
+    tables:
+      - name: bronze_events
+        description: Valid PostgreSQL CDC events received through Debezium and Kafka.
+        columns:
+          - name: event_id
+            data_tests:
+              - unique
+              - not_null
+
+          - name: operation
+            data_tests:
+              - not_null
+
+          - name: source_table
+            data_tests:
+              - not_null
+
+          - name: kafka_topic
+            data_tests:
+              - not_null
+
+          - name: kafka_partition
+            data_tests:
+              - not_null
+
+          - name: kafka_offset
+            data_tests:
+              - not_null
+
+models:
+  - name: stg_bronze_events
+    description: Normalized CDC events with a consistent JSON record for snapshots, creates, updates and deletes.
+    columns:
+      - name: event_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: operation
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - r
+                  - c
+                  - u
+                  - d
+
+      - name: source_table
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - customers
+                  - products
+                  - orders
+                  - order_items
+                  - payments
+                  - shipments
+
+      - name: record_json
+        data_tests:
+          - not_null
+
+      - name: kafka_topic
+        data_tests:
+          - not_null
+
+      - name: kafka_partition
+        data_tests:
+          - not_null
+
+      - name: kafka_offset
+        data_tests:
+          - not_null

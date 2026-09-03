@@ -1,0 +1,171 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: SCD Type 2 customer dimension containing current and historical versions.
+    columns:
+      - name: customer_key
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_id
+        data_tests:
+          - not_null
+
+  - name: dim_products
+    description: Current product dimension.
+    columns:
+      - name: product_key
+        data_tests:
+          - unique
+          - not_null
+
+      - name: product_id
+        data_tests:
+          - unique
+          - not_null
+
+  - name: fact_orders
+    description: One warehouse fact record per current commerce order.
+    columns:
+      - name: order_key
+        data_tests:
+          - unique
+          - not_null
+
+      - name: order_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_key
+
+  - name: fact_order_items
+    description: One warehouse fact record per current order line.
+    columns:
+      - name: order_item_key
+        data_tests:
+          - unique
+          - not_null
+
+      - name: order_item_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: order_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fact_orders')
+                field: order_key
+
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_key
+
+  - name: fact_payments
+    description: One warehouse fact record per current payment.
+    columns:
+      - name: payment_key
+        data_tests:
+          - unique
+          - not_null
+
+      - name: payment_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: order_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fact_orders')
+                field: order_key
+
+  - name: fact_shipments
+    description: One warehouse fact record per current shipment.
+    columns:
+      - name: shipment_key
+        data_tests:
+          - unique
+          - not_null
+
+      - name: shipment_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: order_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fact_orders')
+                field: order_key
+
+  - name: mart_daily_commerce
+    description: Daily Power BI-ready order, payment and shipment metrics.
+    columns:
+      - name: order_date
+        data_tests:
+          - unique
+          - not_null
+
+  - name: mart_customer_value
+    description: Current customer lifetime-value and segmentation metrics.
+    columns:
+      - name: customer_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_key
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_value_segment
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - high_value
+                  - medium_value
+                  - standard_value
+
+  - name: mart_product_performance
+    description: Product sales, revenue and performance segmentation metrics.
+    columns:
+      - name: product_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: product_key
+        data_tests:
+          - unique
+          - not_null
+
+      - name: product_performance_segment
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - top_performer
+                  - core_performer
+                  - lower_performer

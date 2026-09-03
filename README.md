@@ -1,12 +1,12 @@
 # Real-Time Commerce CDC and Analytics Platform
 
-A Data Engineering portfolio project that captures PostgreSQL commerce changes in real time, publishes them through Debezium and Apache Kafka, and processes them with Apache Spark Structured Streaming into governed Bronze Parquet storage.
+A Data Engineering portfolio project that captures PostgreSQL commerce changes in real time, publishes them through Debezium and Apache Kafka, and processes them with Apache Spark Structured Streaming into governed Bronze Parquet storage and a tested PostgreSQL analytical warehouse transformed with dbt.
 
 The project emphasizes reproducibility, source-to-target completeness, metadata preservation, checkpoint recovery, invalid-record quarantine and measured evidence.
 
 ## Current status
 
-Milestones M00 through M03 are complete:
+Milestones M00 through M04 are complete:
 
 - project scope and evidence contract;
 - deterministic PostgreSQL commerce source;
@@ -22,9 +22,15 @@ Milestones M00 through M03 are complete:
 - deterministic event identifiers;
 - checkpoint-based incremental processing;
 - invalid-event quarantine;
+- duplicate-safe Spark JDBC warehouse loading;
+- PostgreSQL analytical warehouse;
+- dbt staging and current-state models;
+- SCD Type 2 customer history;
+- dimensions, facts and reporting marts;
+- exact financial reconciliation;
 - unit and live integration testing.
 
-Warehouse modeling, dbt, Airflow, reliability engineering and final deployment remain planned for later milestones.
+Airflow orchestration, reliability engineering, observability and final deployment remain planned for M05 through M07.
 
 ## Architecture
 
@@ -151,6 +157,29 @@ A later live CDC verification produced three new events. Spark processed only th
 Two deliberately invalid operation events were excluded from Bronze and written to quarantine with reason `unsupported_operation`.
 
 These are local development measurements, not universal production-performance claims.
+
+## Verified M04 warehouse and dbt results
+
+| Result | Verified value |
+|---|---:|
+| Final raw warehouse events | 26,277 |
+| Duplicate raw event IDs | 0 |
+| Warehouse load audit runs | 5 |
+| Initial insertion throughput | 1,767.66 records/second |
+| Customer dimension versions | 1,001 |
+| Historical customer versions | 1 |
+| Order fact rows | 5,000 |
+| Order-item fact rows | 12,500 |
+| Payment fact rows | 5,000 |
+| Shipment fact rows | 2,499 |
+| Reconciled order value | $5,053,882.86 |
+| Financial difference | $0.00 |
+| Daily reporting dates | 18 |
+| dbt data tests | 92 passed |
+| Complete dbt build | 115/115 passed |
+| Python and live integration tests | 33 passed |
+
+M04 adds duplicate-safe Spark JDBC loading, a PostgreSQL analytical warehouse, dbt current-state models, SCD Type 2 customer history, dimensions, facts and reporting marts.
 
 ## Bronze event metadata
 
@@ -359,6 +388,7 @@ Verified measurements and limitations are recorded in:
 - `docs/evaluation/SOURCE_M01.md`
 - `docs/evaluation/CDC_KAFKA_M02.md`
 - `docs/evaluation/SPARK_BRONZE_M03.md`
+- `docs/evaluation/WAREHOUSE_DBT_M04.md`
 
 Only results marked verified in `METRICS.md` should be used in portfolio or resume claims.
 
@@ -366,6 +396,6 @@ Only results marked verified in `METRICS.md` should be used in portfolio or resu
 
 This project currently uses controlled synthetic commerce data and a local Docker environment.
 
-The completed milestones verify relational source design, deterministic generation, CDC, Kafka transport, source-to-topic completeness, Spark Structured Streaming, checkpoint recovery, partitioned Bronze storage, metadata preservation and invalid-event quarantine.
+The completed milestones through M04 verify relational source design, CDC, Kafka transport, Spark processing, checkpoint recovery, Bronze storage, warehouse loading, SCD Type 2 history, dimensional modeling and exact financial reconciliation.
 
-They do not yet prove production-cluster scalability, arbitrary replay safety after checkpoint deletion, cloud-object-storage performance, warehouse reconciliation or internet-scale throughput.
+They do not yet prove production-cluster scalability, cloud-object-storage performance or internet-scale throughput.

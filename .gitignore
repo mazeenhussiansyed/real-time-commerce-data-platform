@@ -32,3 +32,4 @@ dbt/dbt_packages/
 logs/
 artifacts/
 volumes/
+dbt/.user.yml

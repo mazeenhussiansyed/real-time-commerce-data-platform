@@ -1,0 +1,16 @@
+commerce_analytics:
+  target: dev
+
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('WAREHOUSE_POSTGRES_HOST', 'warehouse') }}"
+      port: "{{ env_var('WAREHOUSE_POSTGRES_PORT', '5432') | int }}"
+      user: "{{ env_var('WAREHOUSE_POSTGRES_USER', 'warehouse_app') }}"
+      password: "{{ env_var('WAREHOUSE_POSTGRES_PASSWORD', 'warehouse_dev_password') }}"
+      dbname: "{{ env_var('WAREHOUSE_POSTGRES_DB', 'analytics') }}"
+      schema: analytics
+      threads: 4
+      connect_timeout: 10
+      retries: 2
+      sslmode: disable

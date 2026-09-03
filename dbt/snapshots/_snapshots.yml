@@ -1,0 +1,22 @@
+version: 2
+
+snapshots:
+  - name: snap_customers
+    description: SCD Type 2 history of customer attribute changes and deletions.
+    columns:
+      - name: dbt_scd_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_id
+        data_tests:
+          - not_null
+
+      - name: dbt_valid_from
+        data_tests:
+          - not_null
+
+      - name: dbt_is_deleted
+        data_tests:
+          - not_null
