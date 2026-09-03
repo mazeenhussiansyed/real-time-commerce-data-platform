@@ -2,12 +2,12 @@
 
 ## M00 - Scope and evidence contract - Complete
 
-- Created the repository and installable Python package.
-- Defined the commerce data-platform business problem.
+- Created the Git repository and Python package.
+- Defined the commerce data-engineering problem.
 - Defined project boundaries and non-goals.
-- Created the initial architecture.
+- Created the initial platform architecture.
 - Defined evidence and resume-claim rules.
-- Added an automated package test.
+- Added automated package verification.
 
 ## M01 - Operational commerce source - Complete
 
@@ -16,99 +16,146 @@
 - Modeled customers, products, orders, order items, payments and shipments.
 - Added primary keys, foreign keys, constraints, indexes and update triggers.
 - Built deterministic synthetic-data generation.
-- Loaded 26,249 relational rows atomically.
-- Added protection against accidental source replacement.
-- Verified table counts, financial totals and referential integrity.
+- Loaded 26,249 relational records atomically.
+- Added protection against accidental source overwrites.
+- Verified counts, financial totals and referential integrity.
 - Added unit and live PostgreSQL integration tests.
-- Recorded verified M01 evidence.
+
+### Verified M01 outcome
+
+- Six source tables.
+- 26,249 stored records.
+- Zero referential-integrity failures.
+- Zero order-total mismatches.
+- Zero payment-total mismatches.
+- 10/10 tests passed.
 
 ## M02 - Change Data Capture and Kafka transport - Complete
 
-- Added Apache Kafka 4.1.2 in KRaft mode.
-- Added Debezium Connect 3.5.2.Final.
 - Configured PostgreSQL logical replication.
-- Created a Debezium publication covering six commerce tables.
-- Created and activated a PostgreSQL replication slot.
-- Registered the `commerce-postgres-cdc` source connector.
-- Published changes to six table-specific Kafka topics.
-- Verified an exact 26,249-event initial snapshot.
-- Measured 100% minimum source-to-topic completeness.
-- Verified live create, update and delete events.
-- Confirmed CDC operation order as `c`, `u`, `d`.
-- Confirmed temporary verification rows were removed from PostgreSQL.
-- Preserved historical events in Kafka.
-- Added schema-wrapped Debezium event handling.
+- Added Debezium PostgreSQL Change Data Capture.
+- Added Apache Kafka event transport.
+- Created six table-specific Kafka topics.
+- Configured three partitions per source topic.
+- Preserved Debezium source metadata.
+- Verified the complete initial database snapshot.
+- Reconciled PostgreSQL source rows with Kafka events.
+- Verified live create, update and delete operations.
+- Verified wrapped and unwrapped Debezium payloads.
 - Added unit and live CDC integration tests.
-- Verified 17/17 tests across the complete project suite.
-- Recorded verified M02 evidence.
 
-## M03 - Streaming processing and Bronze storage
+### Verified M02 outcome
 
-- Add Spark Structured Streaming.
-- Consume all six Debezium Kafka topics.
-- Parse Debezium schema and payload envelopes.
-- Preserve event time, operation type and source metadata.
-- Write immutable raw events to Bronze storage.
-- Partition Bronze data for efficient processing.
-- Add checkpointing for restart safety.
-- Deduplicate replayed Kafka events.
-- Quarantine malformed and invalid events.
-- Verify restart and checkpoint recovery.
-- Measure event throughput and end-to-end latency.
+- Debezium connector and task running.
+- Six source tables captured.
+- Six Kafka topics and 18 partitions.
+- 26,249 initial snapshot events.
+- 100% initial source-to-topic completeness.
+- Ordered create, update and delete events verified.
+- Zero residual probe rows.
+- 17/17 tests passed.
+
+## M03 - Spark streaming and Bronze storage - Complete
+
+- Added Apache Spark 4.2.0.
+- Connected Spark Structured Streaming to all six Kafka topics.
+- Added the Spark Kafka connector for Scala 2.13.
+- Preserved Kafka, PostgreSQL and Debezium metadata.
+- Generated deterministic SHA-256 event identifiers.
+- Wrote valid events to immutable Parquet Bronze storage.
+- Partitioned Bronze data by source table and event date.
+- Added persistent Spark checkpoint storage.
+- Verified zero-record checkpoint reruns.
+- Verified three-record incremental CDC processing.
+- Added invalid-event classification.
+- Wrote rejected records to partitioned quarantine storage.
+- Added a Bronze profiling command.
+- Added unit and live Spark integration tests.
+- Recorded local throughput and connector-latency measurements.
+
+### Verified M03 outcome
+
+- 26,270 final Bronze records.
+- 26,270 unique event identifiers.
+- Zero duplicate Bronze event identifiers.
+- Six source tables represented.
+- Six Kafka topics and 18 partitions represented.
+- Zero missing required metadata values.
+- 992.59 events/second initial local throughput.
+- Zero new records during checkpoint rerun.
+- Three of three incremental CDC events processed.
+- Two unsupported-operation events quarantined.
+- Median connector latency of 399 ms.
+- P95 connector latency of 471 ms.
+- 27/27 unit and live integration tests passed.
 
 ## M04 - Warehouse and dbt analytics models
 
-- Load validated records into Snowflake incrementally.
+- Add an analytical warehouse target.
+- Load validated records incrementally from Bronze.
 - Build dbt staging models.
 - Create customer and product dimensions.
 - Implement SCD Type 2 history where appropriate.
 - Create order, payment and shipment fact models.
-- Add dbt relationship, uniqueness and accepted-value tests.
-- Generate dbt documentation.
+- Add dbt uniqueness, relationship, accepted-value and not-null tests.
+- Generate dbt documentation and lineage.
+- Reconcile source, Bronze and warehouse totals.
 - Publish Power BI-ready analytics marts.
-- Reconcile source and warehouse totals.
 
 ## M05 - Airflow orchestration and backfills
 
 - Add dependency-aware Airflow DAGs.
-- Orchestrate source checks, streaming checks and warehouse loads.
+- Orchestrate source checks, CDC reconciliation and warehouse loads.
 - Add retries, timeouts and failure callbacks.
 - Implement date-range backfills.
-- Prevent duplicate business records during reruns.
-- Record run-level audit metadata.
-- Verify backfill idempotency.
+- Prevent duplicate warehouse records during reruns.
+- Record pipeline run IDs and audit metadata.
+- Verify successful and failed DAG behavior.
+- Measure backfill correctness and duration.
 
 ## M06 - Reliability and observability
 
-- Measure freshness, latency and throughput.
-- Detect source-to-target count differences.
+- Measure data freshness, processing latency and throughput.
+- Detect source-to-Bronze and Bronze-to-warehouse differences.
 - Simulate late and out-of-order events.
 - Simulate compatible and incompatible schema changes.
-- Verify checkpoint recovery.
-- Record failed records and rejection reasons.
-- Measure recovery time after a controlled failure.
+- Verify checkpoint recovery after controlled interruption.
+- Record failed records and failure reasons.
 - Add operational health and reconciliation reporting.
+- Measure recovery time after a controlled failure.
 
 ## M07 - Demonstration, deployment and CI
 
-- Containerize the complete local stack.
+- Containerize the complete project stack.
 - Add service health checks and startup dependencies.
 - Add GitHub Actions verification.
-- Create an operational dashboard.
+- Create an operational data-quality dashboard.
 - Document a fresh-machine quick start.
 - Record final verified metrics.
-- Prepare an interview demonstration.
-- Prepare evidence-backed resume bullets.
+- Prepare the interview demonstration.
+- Prepare accurate resume evidence.
 
 ## Definition of done
 
-- Fresh-machine startup is documented.
+- Fresh-machine startup is documented and reproducible.
 - All automated tests pass.
 - CDC completeness is measured.
-- Duplicate processing is prevented.
-- Invalid events are quarantined.
-- Source and warehouse totals reconcile.
-- Historical changes remain auditable.
+- Kafka offsets remain auditable.
+- Duplicate Bronze processing is prevented during normal checkpoint recovery.
+- Invalid events are quarantined with a reason.
+- Source, Bronze and warehouse totals reconcile.
+- Historical dimension changes remain auditable.
+- Pipeline reruns do not create duplicate warehouse records.
 - Failure recovery is demonstrated.
 - Dashboard models are reproducible.
-- Resume claims use only verified metrics.
+- Resume claims use only verified values from `METRICS.md`.
+
+## Evidence rules
+
+- Do not report targets as completed measurements.
+- Do not change controlled source counts without creating a new dataset version.
+- Do not report latency without its measurement boundary.
+- Do not report throughput without the event count and execution environment.
+- Local Docker results must not be presented as cloud-scale performance.
+- Checkpoint idempotency must not be described as arbitrary replay protection.
+- Cloud technologies may be claimed only after successful implementation and verification.

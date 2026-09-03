@@ -1,46 +1,83 @@
 # Real-Time Commerce CDC and Analytics Platform
 
-A Data Engineering portfolio project that captures PostgreSQL commerce changes in real time, publishes them through Debezium and Apache Kafka, and prepares them for reliable streaming processing and analytics.
+A Data Engineering portfolio project that captures PostgreSQL commerce changes in real time, publishes them through Debezium and Apache Kafka, and processes them with Apache Spark Structured Streaming into governed Bronze Parquet storage.
+
+The project emphasizes reproducibility, source-to-target completeness, metadata preservation, checkpoint recovery, invalid-record quarantine and measured evidence.
 
 ## Current status
 
-Milestones M00 through M02 are complete:
+Milestones M00 through M03 are complete:
 
 - project scope and evidence contract;
-- installable Python package;
-- PostgreSQL operational source;
-- six-table relational commerce model;
-- deterministic synthetic-data generation;
-- atomic loading and overwrite protection;
-- source profiling and integrity validation;
-- PostgreSQL logical replication;
+- deterministic PostgreSQL commerce source;
+- six-table relational data model;
+- 26,249-record controlled source dataset;
+- PostgreSQL logical write-ahead logging;
 - Debezium Change Data Capture;
-- Apache Kafka event transport;
-- six table-specific CDC topics;
-- source-to-topic completeness measurement;
+- six table-specific Kafka topics;
+- source-to-topic reconciliation;
 - live create, update and delete verification;
-- automated unit, PostgreSQL and CDC integration tests.
+- Apache Spark Structured Streaming;
+- immutable partitioned Bronze Parquet storage;
+- deterministic event identifiers;
+- checkpoint-based incremental processing;
+- invalid-event quarantine;
+- unit and live integration testing.
 
-Spark Structured Streaming and Bronze storage are planned for M03.
+Warehouse modeling, dbt, Airflow, reliability engineering and final deployment remain planned for later milestones.
 
-## Why this is a Data Engineering project
+## Architecture
 
-This project demonstrates several responsibilities commonly expected in Data Engineer roles:
+```mermaid
+flowchart TD
+    A["PostgreSQL commerce source"] --> B["Debezium CDC"]
+    B --> C["Apache Kafka topics"]
+    C --> D["Spark Structured Streaming"]
+    D --> E["Bronze Parquet storage"]
+    D --> F["Quarantine storage"]
+```
 
-- designing relational source systems;
-- generating and validating reproducible datasets;
-- configuring PostgreSQL logical replication;
-- capturing database changes without repeatedly reading entire tables;
-- transporting events through Kafka;
-- validating source-to-stream completeness;
-- preserving historical change events;
-- testing database, connector and streaming infrastructure;
-- measuring data quality and pipeline behavior;
-- preparing streaming data for lakehouse and warehouse processing.
+The current data path is:
 
-## Verified PostgreSQL source results
+1. PostgreSQL stores operational commerce data.
+2. PostgreSQL logical WAL records database changes.
+3. Debezium reads those changes.
+4. Debezium publishes events to Kafka topics.
+5. Spark Structured Streaming consumes the Kafka events.
+6. Valid events are written to Bronze Parquet storage.
+7. Invalid events are written to quarantine with a reason.
+8. Spark checkpoints preserve processed Kafka offsets.
 
-| Result | Verified value |
+## Technology stack
+
+| Layer | Technology |
+|---|---|
+| Operational source | PostgreSQL 17 |
+| Change Data Capture | Debezium 3.5.2 |
+| Event transport | Apache Kafka 4.1.2 |
+| Stream processing | Apache Spark 4.2.0 |
+| Bronze storage | Partitioned Parquet |
+| Runtime | Python 3.14 |
+| Containers | Docker Compose |
+| Testing | Python `unittest` |
+| Version control | Git and GitHub |
+
+## Source data model
+
+The PostgreSQL `commerce` schema contains:
+
+- `customers`
+- `products`
+- `orders`
+- `order_items`
+- `payments`
+- `shipments`
+
+The controlled source dataset is generated deterministically with seed `20260902`.
+
+## Verified M01 source results
+
+| Metric | Verified result |
 |---|---:|
 | Customers | 1,000 |
 | Products | 250 |
@@ -55,202 +92,280 @@ This project demonstrates several responsibilities commonly expected in Data Eng
 | Order-total mismatches | 0 |
 | Payment-total mismatches | 0 |
 | PostgreSQL WAL level | logical |
-| Baseline load duration | 1.451 seconds |
+| M01 tests | 10/10 passed |
 
-The source dataset is reproducible with seed `20260902` and SHA-256 fingerprint:
+## Verified M02 CDC and Kafka results
+
+| Metric | Verified result |
+|---|---:|
+| Debezium connector state | RUNNING |
+| Debezium task state | RUNNING |
+| Captured source tables | 6 |
+| Table-specific Kafka topics | 6 |
+| Kafka partitions | 18 |
+| Initial snapshot events | 26,249 |
+| Initial source-to-topic completeness | 100% |
+| Initial source/topic count difference | 0 |
+| Live create events verified | Yes |
+| Live update events verified | Yes |
+| Live delete events verified | Yes |
+| Residual CDC probe rows | 0 |
+| M02 tests | 17/17 passed |
+
+Kafka topics:
 
 ```text
-9616a65028c5f571e5cc4d4c5ced080977fbea1bf3f1117d57b80b67b49d83e5
+commerce.commerce.customers
+commerce.commerce.products
+commerce.commerce.orders
+commerce.commerce.order_items
+commerce.commerce.payments
+commerce.commerce.shipments
 ```
 
-## Verified CDC and Kafka results
+## Verified M03 Spark Bronze results
 
-| Result | Verified value |
+| Metric | Verified result |
 |---|---:|
-| Debezium connector | RUNNING |
-| Connector tasks | 1 RUNNING |
-| CDC business topics | 6 |
-| Initial source rows | 26,249 |
-| Initial Kafka snapshot events | 26,249 |
-| Initial snapshot match | Exact |
-| Minimum source-to-topic completeness | 100% |
-| Live CDC operations | create, update, delete |
-| Live events captured in order | `c`, `u`, `d` |
-| Temporary probe rows remaining | 0 |
-| Measured live verification duration | 930.544 ms |
-| Final source rows | 26,249 |
-| Final Kafka events | 26,258 |
-| Historical probe events retained | 9 |
-| Complete automated suite | 17/17 passed |
+| Spark version | 4.2.0 |
+| Final Bronze records | 26,270 |
+| Unique Bronze event IDs | 26,270 |
+| Duplicate Bronze event IDs | 0 |
+| Source tables represented | 6 |
+| Kafka topics represented | 6 |
+| Kafka partitions represented | 18 |
+| Missing required metadata values | 0 |
+| Initial local throughput | 992.59 events/second |
+| Checkpoint-rerun new records | 0 |
+| Incremental CDC records captured | 3/3 |
+| Quarantined invalid events | 2 |
+| Quarantine duplicate IDs | 0 |
+| Median connector latency | 399 ms |
+| P95 connector latency | 471 ms |
+| Complete live test suite | 27/27 passed |
 
-Kafka contains nine more events than the current PostgreSQL row count because three verification runs each generated a create, update and delete event. The temporary customer was deleted from PostgreSQL, but Kafka correctly retained its historical changes.
+The initial Spark run processed 26,264 Kafka events in 26.460 seconds. A checkpoint rerun processed zero new events and produced zero duplicates.
 
-## Architecture
+A later live CDC verification produced three new events. Spark processed only those three new Kafka records.
 
-```mermaid
-flowchart LR
-    A[Commerce applications] --> B[(PostgreSQL)]
-    B --> C[Logical WAL]
-    C --> D[Debezium Connect]
-    D --> E[Apache Kafka topics]
-    E --> F[Spark Structured Streaming]
-    F --> G[Bronze storage]
-    G --> H[Warehouse and dbt]
-    H --> I[Analytics marts]
+Two deliberately invalid operation events were excluded from Bronze and written to quarantine with reason `unsupported_operation`.
+
+These are local development measurements, not universal production-performance claims.
+
+## Bronze event metadata
+
+Each Bronze event preserves:
+
+- deterministic event ID;
+- ingestion run ID;
+- ingestion timestamp;
+- event timestamp;
+- Debezium operation;
+- PostgreSQL source timestamp;
+- Debezium connector timestamp;
+- PostgreSQL LSN;
+- PostgreSQL transaction ID;
+- Kafka topic;
+- Kafka partition;
+- Kafka offset;
+- Kafka timestamp;
+- message key;
+- before record;
+- after record;
+- Debezium payload;
+- original event value;
+- schema name;
+- source table;
+- event-date partition.
+
+The event ID is a SHA-256 hash of:
+
+```text
+Kafka topic + Kafka partition + Kafka offset
 ```
 
-The implemented M02 flow currently ends at the Kafka topics. Spark, Bronze storage, warehouse models and analytics marts are subsequent milestones.
+## Bronze and quarantine layout
 
-## Source data model
+Valid events are stored as Parquet and partitioned by:
 
-| Table | Purpose | Rows |
-|---|---|---:|
-| `customers` | Customer identity and status | 1,000 |
-| `products` | Product catalog and pricing | 250 |
-| `orders` | Order headers and financial totals | 5,000 |
-| `order_items` | Products purchased per order | 12,500 |
-| `payments` | Payment lifecycle | 5,000 |
-| `shipments` | Shipment lifecycle | 2,499 |
+```text
+source_table
+event_date
+```
 
-## CDC topic mapping
+Invalid events are stored separately and partitioned by:
 
-| PostgreSQL table | Kafka topic |
-|---|---|
-| `commerce.customers` | `commerce.commerce.customers` |
-| `commerce.products` | `commerce.commerce.products` |
-| `commerce.orders` | `commerce.commerce.orders` |
-| `commerce.order_items` | `commerce.commerce.order_items` |
-| `commerce.payments` | `commerce.commerce.payments` |
-| `commerce.shipments` | `commerce.commerce.shipments` |
+```text
+invalid_reason
+event_date
+```
 
-## Fresh local startup
+Spark checkpoints are stored independently from data files. This allows normal restarts to continue from previously committed Kafka offsets.
 
-Create and activate the virtual environment:
+## Quick start
+
+### 1. Enter the project
 
 ```bash
-python -m venv .venv
+cd ~/portfolio-lab/projects/p03-real-time-commerce-data-platform
 source .venv/bin/activate
-python -m pip install --upgrade pip
+```
+
+### 2. Install the Python package
+
+```bash
 python -m pip install -e .
 ```
 
-Start PostgreSQL first:
+### 3. Start PostgreSQL, Kafka and Debezium
 
 ```bash
-docker compose up -d postgres
-python scripts/wait_for_postgres.py
-```
-
-Create the deterministic source baseline:
-
-```bash
-python scripts/seed_source.py --reset
-python scripts/profile_source.py
-```
-
-Start Kafka and Debezium Connect:
-
-```bash
-docker compose up -d kafka connect
+docker compose up -d postgres kafka connect
 docker compose ps
 ```
 
-Register or update the CDC connector:
+### 4. Wait for PostgreSQL
+
+```bash
+python scripts/wait_for_postgres.py
+```
+
+### 5. Seed the controlled source
+
+On a fresh environment:
+
+```bash
+python scripts/seed_source.py --reset
+```
+
+The `--reset` option intentionally replaces existing source rows. Do not use it when source data must be preserved.
+
+### 6. Register the Debezium connector
 
 ```bash
 python scripts/register_connector.py
 ```
 
-Verify the initial CDC snapshot:
+### 7. Verify CDC health and completeness
 
 ```bash
 python scripts/profile_cdc.py
-```
-
-Verify live create, update and delete propagation:
-
-```bash
 python scripts/verify_cdc_operations.py --timeout 30
 ```
 
-## Automated tests
+### 8. Run Spark Bronze ingestion
 
-Run tests that do not require live services:
+```bash
+docker compose --profile spark run --rm spark
+```
+
+To display only the final result:
+
+```bash
+docker compose --profile spark run --rm spark 2>&1 \
+  | grep 'BRONZE_STREAM_RESULT='
+```
+
+### 9. Profile Bronze storage
+
+```bash
+docker compose --profile spark run --rm spark \
+  /workspace/scripts/profile_bronze.py 2>&1 \
+  | grep 'BRONZE_PROFILE_RESULT='
+```
+
+## Running tests
+
+Run local unit tests:
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-Run the complete PostgreSQL and CDC suite:
+Run the complete live integration suite:
 
 ```bash
 RUN_POSTGRES_INTEGRATION=1 \
 RUN_CDC_INTEGRATION=1 \
+RUN_SPARK_INTEGRATION=1 \
 python -m unittest discover -s tests -v
 ```
 
-## Useful service commands
+## Stopping and restarting
 
-Check container status:
-
-```bash
-docker compose ps
-```
-
-Check Debezium connector status:
-
-```bash
-curl -sS \
-  http://127.0.0.1:8083/connectors/commerce-postgres-cdc/status
-```
-
-List Kafka topics:
-
-```bash
-docker compose exec -T kafka \
-  /opt/kafka/bin/kafka-topics.sh \
-  --bootstrap-server kafka:9092 \
-  --list
-```
-
-Stop the services while preserving volumes:
+Stop the containers while preserving all named-volume data:
 
 ```bash
 docker compose down
 ```
 
-Start the preserved environment again:
+Restart the platform:
 
 ```bash
-docker compose up -d
+docker compose up -d postgres kafka connect
+python scripts/register_connector.py
+docker compose --profile spark run --rm spark
 ```
 
-Delete containers and persistent volumes only when a completely fresh environment is required:
+Checkpoints ensure the Spark job processes only Kafka events that were not previously committed.
+
+To delete all Docker volumes and rebuild from an empty environment:
 
 ```bash
 docker compose down -v
 ```
 
-The `-v` option permanently deletes the local PostgreSQL and Kafka volumes. Run it only when intentionally rebuilding the entire local baseline.
+Warning: `docker compose down -v` permanently removes the local PostgreSQL, Kafka, Bronze, quarantine, Spark checkpoint and dependency-cache volumes.
 
-## Important local ports
+## Project structure
 
-| Service | Address |
-|---|---|
-| PostgreSQL | `127.0.0.1:5433` |
-| Kafka host bootstrap server | `127.0.0.1:29092` |
-| Debezium Connect REST API | `http://127.0.0.1:8083` |
+```text
+infrastructure/
+  debezium/
+  postgres/
+
+scripts/
+  profile_bronze.py
+  profile_cdc.py
+  profile_source.py
+  register_connector.py
+  run_bronze_stream.py
+  seed_source.py
+  spark_kafka_smoke.py
+  verify_cdc_operations.py
+  wait_for_postgres.py
+
+src/commerce_pipeline/
+  bronze.py
+  cdc.py
+  database.py
+  source_data.py
+
+tests/
+  test_bronze.py
+  test_cdc.py
+  test_cdc_integration.py
+  test_package.py
+  test_postgres_integration.py
+  test_source_data.py
+  test_spark_bronze_integration.py
+```
 
 ## Evidence
 
-Verified measurements are maintained in:
+Verified measurements and limitations are recorded in:
 
 - `METRICS.md`
 - `docs/evaluation/SOURCE_M01.md`
 - `docs/evaluation/CDC_KAFKA_M02.md`
+- `docs/evaluation/SPARK_BRONZE_M03.md`
+
+Only results marked verified in `METRICS.md` should be used in portfolio or resume claims.
 
 ## Scope warning
 
-The project currently uses controlled synthetic commerce data and a local Docker environment. The results verify relational modeling, deterministic generation, data integrity, logical replication, CDC transport, event retention and automated integration testing.
+This project currently uses controlled synthetic commerce data and a local Docker environment.
 
-They do not yet prove production-scale throughput, cloud deployment, Spark recovery, warehouse reconciliation or internet-scale performance. Those capabilities remain later milestones.
+The completed milestones verify relational source design, deterministic generation, CDC, Kafka transport, source-to-topic completeness, Spark Structured Streaming, checkpoint recovery, partitioned Bronze storage, metadata preservation and invalid-event quarantine.
+
+They do not yet prove production-cluster scalability, arbitrary replay safety after checkpoint deletion, cloud-object-storage performance, warehouse reconciliation or internet-scale throughput.

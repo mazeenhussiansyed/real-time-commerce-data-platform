@@ -98,9 +98,58 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  spark:
+    image: apache/spark:4.2.0-python3
+    user: "0:0"
+    working_dir: /workspace
+    environment:
+      HOME: /tmp
+      PYTHONPATH: /workspace/src
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      BRONZE_PATH: /workspace/data/landing/bronze
+      QUARANTINE_PATH: /workspace/data/quarantine/bronze
+      CHECKPOINT_PATH: /workspace/data/checkpoints/bronze
+    volumes:
+      - ./:/workspace
+      - commerce_spark_ivy:/tmp/.ivy2
+      - commerce_bronze_data:/workspace/data/landing
+      - commerce_quarantine_data:/workspace/data/quarantine
+      - commerce_spark_checkpoints:/workspace/data/checkpoints
+    depends_on:
+      kafka:
+        condition: service_healthy
+    profiles:
+      - spark
+    entrypoint:
+      - /opt/spark/bin/spark-submit
+    command:
+      - --master
+      - local[2]
+      - --driver-memory
+      - 1g
+      - --packages
+      - org.apache.spark:spark-sql-kafka-0-10_2.13:4.2.0
+      - --conf
+      - spark.jars.ivy=/tmp/.ivy2
+      - --conf
+      - spark.sql.shuffle.partitions=4
+      - /workspace/scripts/run_bronze_stream.py
+
 volumes:
   commerce_postgres_data:
     name: commerce-postgres-data
 
   commerce_kafka_data:
     name: commerce-kafka-data
+
+  commerce_spark_ivy:
+    name: commerce-spark-ivy
+
+  commerce_bronze_data:
+    name: commerce-bronze-data
+
+  commerce_quarantine_data:
+    name: commerce-quarantine-data
+
+  commerce_spark_checkpoints:
+    name: commerce-spark-checkpoints
