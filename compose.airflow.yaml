@@ -1,0 +1,145 @@
+name: real-time-commerce
+
+x-airflow-common: &airflow-common
+  image: commerce-airflow:3.3.1
+  build:
+    context: .
+    dockerfile: Dockerfile.airflow
+  working_dir: /opt/airflow/project
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg://airflow:airflow@airflow-db:5432/airflow
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-apiserver:8080/execution/
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:-commerce_airflow_jwt_secret}
+    AIRFLOW__API_AUTH__JWT_ISSUER: airflow
+    AIRFLOW__API__SECRET_KEY: ${AIRFLOW_API_SECRET_KEY:-commerce_airflow_api_secret}
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+    PYTHONPATH: /opt/airflow/project/src
+    COMMERCE_POSTGRES_HOST: postgres
+    COMMERCE_POSTGRES_PORT: 5432
+    COMMERCE_POSTGRES_DB: commerce
+    COMMERCE_POSTGRES_USER: commerce_app
+    COMMERCE_POSTGRES_PASSWORD: commerce_dev_password
+    WAREHOUSE_POSTGRES_HOST: warehouse
+    WAREHOUSE_POSTGRES_PORT: 5432
+    WAREHOUSE_POSTGRES_DB: analytics
+    WAREHOUSE_POSTGRES_USER: warehouse_app
+    WAREHOUSE_POSTGRES_PASSWORD: warehouse_dev_password
+    KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    KAFKA_CONNECT_URL: http://connect:8083
+    COMMERCE_PROJECT_HOST_PATH: ${COMMERCE_PROJECT_HOST_PATH}
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags:ro
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/plugins:/opt/airflow/plugins:ro
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ./scripts:/opt/airflow/project/scripts:ro
+    - ./src:/opt/airflow/project/src:ro
+    - ./infrastructure:/opt/airflow/project/infrastructure:ro
+    - ./dbt:/opt/airflow/project/dbt:ro
+  group_add:
+    - "${DOCKER_GID}"
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    airflow-db:
+      condition: service_healthy
+
+services:
+  airflow-db:
+    image: postgres:17-alpine
+    container_name: commerce-airflow-db
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+    ports:
+      - "127.0.0.1:${AIRFLOW_POSTGRES_PORT:-5435}:5432"
+    volumes:
+      - commerce_airflow_metadata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: commerce-airflow-init
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: airflow
+      _AIRFLOW_WWW_USER_PASSWORD: airflow
+      _AIRFLOW_WWW_USER_FIRSTNAME: Commerce
+      _AIRFLOW_WWW_USER_LASTNAME: Admin
+      _AIRFLOW_WWW_USER_EMAIL: airflow@example.test
+    command: version
+    restart: "no"
+
+  airflow-apiserver:
+    <<: *airflow-common
+    container_name: commerce-airflow-apiserver
+    command: api-server
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      airflow-db:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: commerce-airflow-scheduler
+    command: scheduler
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname \"$${HOSTNAME}\""]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      airflow-db:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+      airflow-apiserver:
+        condition: service_healthy
+    restart: unless-stopped
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    container_name: commerce-airflow-dag-processor
+    command: dag-processor
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type DagProcessorJob --hostname \"$${HOSTNAME}\""]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      airflow-db:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+      airflow-apiserver:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  commerce_airflow_metadata:
+    name: commerce-airflow-metadata

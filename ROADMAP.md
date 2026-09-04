@@ -138,16 +138,39 @@
 - 115/115 complete dbt build resources passed.
 - 33/33 Python and live integration tests passed.
 
-## M05 - Airflow orchestration and backfills
+## M05 - Airflow orchestration and backfills - Complete
 
-- Add dependency-aware Airflow DAGs.
-- Orchestrate source checks, CDC reconciliation and warehouse loads.
-- Add retries, timeouts and failure callbacks.
-- Implement date-range backfills.
-- Prevent duplicate warehouse records during reruns.
-- Record pipeline run IDs and audit metadata.
-- Verify successful and failed DAG behavior.
-- Measure backfill correctness and duration.
+- Added an Apache Airflow 3.3.1 local orchestration stack.
+- Added a PostgreSQL Airflow metadata database and LocalExecutor.
+- Added the Airflow API server, scheduler and DAG processor.
+- Built a dependency-aware eight-task commerce pipeline DAG.
+- Orchestrated service validation, Spark ingestion, Bronze profiling, warehouse loading, dbt transformation and warehouse profiling.
+- Added retries, execution timeouts and DAG failure handling.
+- Added validated incremental and date-range backfill configurations.
+- Limited backfill windows to a maximum of 31 inclusive days.
+- Added duplicate-safe incremental rebuilding of the daily commerce mart.
+- Added pipeline-run audit records for running, successful and failed executions.
+- Recorded failed task identifiers and recovery evidence.
+- Added orchestration unit tests, live integration tests and profiling.
+- Documented verified local Airflow and backfill measurements.
+
+### Verified M05 outcome
+
+- Airflow metadata database, scheduler and DAG processor were healthy.
+- The commerce DAG loaded with zero import errors.
+- Eight dependency-ordered Airflow tasks were verified.
+- One incremental pipeline run completed successfully in 48.036 seconds.
+- A three-day backfill for 2026-01-05 through 2026-01-07 completed successfully in 45.464 seconds.
+- The backfill replaced exactly three daily reporting rows.
+- The daily mart retained 18 total and 18 unique reporting dates.
+- The daily mart retained 5,000 orders and $5,053,882.86 in order value.
+- Zero duplicate reporting dates remained after the backfill.
+- One controlled failed run identified `run_dbt_build` as the failed task.
+- The controlled failure was recovered by a successful backfill rerun.
+- Three pipeline audit records captured two successful runs and one failed run.
+- Zero inconsistent completed audit records remained.
+- The complete backfill dbt build passed 115/115 resources.
+- The complete Python and live integration suite passed 47/47 tests in 33.921 seconds.
 
 ## M06 - Reliability and observability
 

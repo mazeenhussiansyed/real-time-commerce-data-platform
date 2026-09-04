@@ -156,14 +156,37 @@ Only rows marked **Yes** may be used as measured project evidence.
 | Complete M04 Python suite | unit plus all live integrations | 33/33 passed | complete live test command | Yes, 2026-09-03 |
 | Complete M04 test duration | local Docker environment | 30.976 seconds | complete live test command | Yes, 2026-09-03 |
 
-## Planned orchestration metrics
+## M05 Airflow orchestration and backfill verification
 
-| Metric | Result | Evidence command | Verified |
-|---|---:|---|---|
-| Backfill duplicate records | Not measured | future M05 evaluation | No |
-| Airflow DAG success and retry behavior | Not measured | future M05 evaluation | No |
-| Airflow pipeline duration | Not measured | future M05 benchmark | No |
-| Failed-run audit records | Not measured | future M05 evaluation | No |
+| Metric | Configuration | Result | Evidence command | Verified |
+|---|---|---:|---|---|
+| Airflow version | Local Docker image | 3.3.1 | `docker run commerce-airflow:3.3.1 airflow version` | Yes, 2026-09-03 |
+| Healthy Airflow components | Metadata database, scheduler and DAG processor | 3 | Airflow health API | Yes, 2026-09-03 |
+| DAG import errors | `commerce_incremental_pipeline` | 0 | `airflow dags list-import-errors` | Yes, 2026-09-03 |
+| Orchestrated DAG tasks | Dependency-ordered pipeline | 8 | `airflow tasks list commerce_incremental_pipeline` | Yes, 2026-09-03 |
+| Successful incremental runs | Audited Airflow executions | 1 | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Incremental pipeline duration | Complete eight-task DAG | 48.036 seconds | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Successful backfill runs | Audited Airflow executions | 1 | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Verified backfill range | Inclusive date range | 2026-01-05 through 2026-01-07 | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Verified backfill window | Daily commerce mart | 3 days | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Maximum permitted backfill window | Configuration validation | 31 days | orchestration unit tests | Yes, 2026-09-03 |
+| Successful backfill duration | Complete eight-task DAG | 45.464 seconds | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Replaced backfill rows | Daily commerce mart | 3 | warehouse reconciliation query | Yes, 2026-09-03 |
+| Total reporting dates after backfill | Incremental daily mart | 18 | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Duplicate reporting dates after backfill | Incremental daily mart | 0 | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Orders after backfill | Daily mart reconciliation | 5,000 | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Order value after backfill | Daily mart reconciliation | $5,053,882.86 | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Pipeline audit records | Incremental, failed backfill and recovered backfill | 3 | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Successful audited runs | Incremental and recovered backfill | 2 | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Failed audited runs | Controlled dbt failure | 1 | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Controlled failure duration | Failed backfill execution | 116.183 seconds | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Identified failed task | Controlled failure | `run_dbt_build` | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Recovered backfill failures | Successful rerun after controlled failure | 1 | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Inconsistent completed audit records | Pipeline audit validation | 0 | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Incomplete failure audit records | Pipeline audit validation | 0 | `python scripts/profile_orchestration.py` | Yes, 2026-09-03 |
+| Complete backfill dbt build | Models, snapshot and tests | 115/115 passed | backfill `dbt build` command | Yes, 2026-09-03 |
+| Complete M05 Python suite | Unit plus all live integrations | 47/47 passed | complete live test command | Yes, 2026-09-03 |
+| Complete M05 test duration | Local Docker environment | 33.921 seconds | complete live test command | Yes, 2026-09-03 |
 
 ## Planned reliability metrics
 
