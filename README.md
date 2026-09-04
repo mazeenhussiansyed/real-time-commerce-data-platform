@@ -2,11 +2,11 @@
 
 A Data Engineering portfolio project that captures PostgreSQL commerce changes in real time, publishes them through Debezium and Apache Kafka, and processes them with Apache Spark Structured Streaming into governed Bronze Parquet storage and a tested PostgreSQL analytical warehouse transformed with dbt.
 
-The project emphasizes reproducibility, source-to-target completeness, metadata preservation, checkpoint recovery, invalid-record quarantine and measured evidence.
+Apache Airflow orchestrates service validation, incremental processing, warehouse loading, dbt transformations, controlled date-range backfills, failure recovery and pipeline-run auditing.
 
 ## Current status
 
-Milestones M00 through M04 are complete:
+Milestones M00 through M05 are complete:
 
 - project scope and evidence contract;
 - deterministic PostgreSQL commerce source;
@@ -28,9 +28,14 @@ Milestones M00 through M04 are complete:
 - SCD Type 2 customer history;
 - dimensions, facts and reporting marts;
 - exact financial reconciliation;
+- Apache Airflow 3 orchestration;
+- dependency-aware eight-task pipeline execution;
+- validated incremental and date-range backfill modes;
+- retries, timeouts and failure callbacks;
+- pipeline-run auditing and controlled failure recovery;
 - unit and live integration testing.
 
-Airflow orchestration, reliability engineering, observability and final deployment remain planned for M05 through M07.
+M06 and M07 will add reliability testing, operational observability, CI, deployment verification and final demonstration evidence.
 
 ## Architecture
 
@@ -40,19 +45,31 @@ flowchart TD
     B --> C["Apache Kafka topics"]
     C --> D["Spark Structured Streaming"]
     D --> E["Bronze Parquet storage"]
-    D --> F["Quarantine storage"]
+    D --> F["Invalid-event quarantine"]
+    G["Apache Airflow"] --> H["Service validation"]
+    H --> D
+    G --> I["Incremental warehouse loader"]
+    E --> I
+    I --> J["PostgreSQL warehouse"]
+    G --> K["dbt build and backfills"]
+    J --> K
+    K --> L["Analytics marts"]
+    G --> M["Pipeline audit records"]
 ```
 
 The current data path is:
 
-1. PostgreSQL stores operational commerce data.
-2. PostgreSQL logical WAL records database changes.
-3. Debezium reads those changes.
-4. Debezium publishes events to Kafka topics.
-5. Spark Structured Streaming consumes the Kafka events.
-6. Valid events are written to Bronze Parquet storage.
-7. Invalid events are written to quarantine with a reason.
-8. Spark checkpoints preserve processed Kafka offsets.
+1. PostgreSQL stores deterministic operational commerce data.
+2. PostgreSQL logical WAL records source changes.
+3. Debezium publishes change events to six Kafka topics.
+4. Airflow validates the required services and connector.
+5. Airflow starts checkpoint-based Spark Structured Streaming.
+6. Spark writes valid events to Bronze Parquet storage.
+7. Spark writes invalid events to quarantine with failure reasons.
+8. Airflow runs the duplicate-safe Bronze-to-warehouse loader.
+9. Airflow runs dbt staging, current-state, snapshot, fact and mart models.
+10. Incremental and date-range backfill runs rebuild affected daily rows.
+11. Pipeline audit records preserve run mode, status, duration and failure metadata.
 
 ## Technology stack
 
@@ -63,9 +80,12 @@ The current data path is:
 | Event transport | Apache Kafka 4.1.2 |
 | Stream processing | Apache Spark 4.2.0 |
 | Bronze storage | Partitioned Parquet |
-| Runtime | Python 3.14 |
+| Analytical warehouse | PostgreSQL 17 |
+| Transformation framework | dbt Core 1.11.14 and dbt-postgres 1.11.0 |
+| Orchestration | Apache Airflow 3.3.1 with LocalExecutor |
+| Runtime | Python 3.12 to 3.14 |
 | Containers | Docker Compose |
-| Testing | Python `unittest` |
+| Testing | Python `unittest` and dbt data tests |
 | Version control | Git and GitHub |
 
 ## Source data model
@@ -180,6 +200,31 @@ These are local development measurements, not universal production-performance c
 | Python and live integration tests | 33 passed |
 
 M04 adds duplicate-safe Spark JDBC loading, a PostgreSQL analytical warehouse, dbt current-state models, SCD Type 2 customer history, dimensions, facts and reporting marts.
+
+## Verified M05 Airflow orchestration and backfill results
+
+| Result | Verified value |
+|---|---:|
+| Airflow version | 3.3.1 |
+| Dependency-ordered DAG tasks | 8 |
+| DAG import errors | 0 |
+| Successful incremental duration | 48.036 seconds |
+| Successful backfill range | 2026-01-05 through 2026-01-07 |
+| Successful backfill duration | 45.464 seconds |
+| Backfilled reporting rows | 3 |
+| Total reporting dates after backfill | 18 |
+| Duplicate reporting dates | 0 |
+| Orders retained after backfill | 5,000 |
+| Order value retained after backfill | $5,053,882.86 |
+| Pipeline audit records | 3 |
+| Successful audited runs | 2 |
+| Controlled failed runs | 1 |
+| Recovered backfill failures | 1 |
+| Inconsistent completed audit records | 0 |
+| Complete backfill dbt build | 115/115 passed |
+| Python and live integration tests | 47/47 passed |
+
+M05 adds an Apache Airflow orchestration stack, an eight-task incremental pipeline, validated date-range backfills, retries, timeouts, failure callbacks and durable pipeline-run auditing. A controlled dbt failure identified `run_dbt_build` as the failed task, and a corrected backfill rerun recovered successfully without duplicate reporting dates.
 
 ## Bronze event metadata
 
@@ -303,81 +348,196 @@ docker compose --profile spark run --rm spark \
   | grep 'BRONZE_PROFILE_RESULT='
 ```
 
+### 10. Start the analytical warehouse
+
+```bash
+docker compose up -d warehouse
+python scripts/wait_for_warehouse.py
+```
+
+### 11. Load Bronze events into the warehouse
+
+The loader compares deterministic event IDs and inserts only records that are not already present.
+
+```bash
+docker compose --profile spark run --rm spark --master local[2] --driver-memory 1g --packages org.postgresql:postgresql:42.7.13 --conf spark.jars.ivy=/tmp/.ivy2 --conf spark.sql.shuffle.partitions=4 /workspace/scripts/load_bronze_to_warehouse.py
+```
+
+### 12. Build and run the dbt project
+
+```bash
+docker build -f Dockerfile.dbt -t commerce-dbt:1.11 .
+docker run --rm --network real-time-commerce_default -e WAREHOUSE_POSTGRES_HOST=warehouse -v "$PWD/dbt:/workspace/dbt" commerce-dbt:1.11 build
+```
+
+Profile the completed analytical warehouse:
+
+```bash
+python scripts/profile_warehouse.py
+```
+
+### 13. Configure the local Airflow environment
+
+Create the ignored local environment file and replace the machine-specific values:
+
+```bash
+cp -n .env.example .env
+sed -i "s/^AIRFLOW_UID=.*/AIRFLOW_UID=$(id -u)/" .env
+sed -i "s|^COMMERCE_PROJECT_HOST_PATH=.*|COMMERCE_PROJECT_HOST_PATH=$PWD|" .env
+sed -i "s/^DOCKER_GID=.*/DOCKER_GID=$(stat -c %g /var/run/docker.sock)/" .env
+sed -i "s|^AIRFLOW_FERNET_KEY=.*|AIRFLOW_FERNET_KEY=$(openssl rand -base64 32 | tr "+/" "-_")|" .env
+sed -i "s/^AIRFLOW_JWT_SECRET=.*/AIRFLOW_JWT_SECRET=$(openssl rand -hex 32)/" .env
+sed -i "s/^AIRFLOW_API_SECRET_KEY=.*/AIRFLOW_API_SECRET_KEY=$(openssl rand -hex 32)/" .env
+```
+
+### 14. Build and start Airflow
+
+```bash
+docker build -f Dockerfile.airflow -t commerce-airflow:3.3.1 .
+docker compose -f compose.yaml -f compose.airflow.yaml up airflow-init
+docker compose -f compose.yaml -f compose.airflow.yaml up -d airflow-apiserver airflow-scheduler airflow-dag-processor
+curl -sS http://127.0.0.1:8080/api/v2/monitor/health
+```
+
+The local Airflow interface is available at `http://127.0.0.1:8080`.
+
+### 15. Trigger an incremental pipeline run
+
+```bash
+docker compose -f compose.yaml -f compose.airflow.yaml exec airflow-scheduler airflow dags trigger commerce_incremental_pipeline
+```
+
+### 16. Trigger a controlled date-range backfill
+
+```bash
+docker compose -f compose.yaml -f compose.airflow.yaml exec airflow-scheduler airflow dags trigger --conf "{\"run_mode\":\"backfill\",\"start_date\":\"2026-01-05\",\"end_date\":\"2026-01-07\"}" commerce_incremental_pipeline
+```
+
+After the DAG run completes, validate its audit records and reconciled daily mart:
+
+```bash
+python scripts/profile_orchestration.py
+```
+
 ## Running tests
 
-Run local unit tests:
+Run the local unit suite. Live integration tests are skipped unless their environment flags are enabled:
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-Run the complete live integration suite:
+Run only the orchestration configuration unit tests:
 
 ```bash
-RUN_POSTGRES_INTEGRATION=1 \
-RUN_CDC_INTEGRATION=1 \
-RUN_SPARK_INTEGRATION=1 \
-python -m unittest discover -s tests -v
+python -m unittest discover -s tests -p "test_orchestration.py" -v
 ```
+
+After the core services, warehouse and Airflow stack are running, execute the complete live integration suite:
+
+```bash
+env RUN_POSTGRES_INTEGRATION=1 RUN_CDC_INTEGRATION=1 RUN_SPARK_INTEGRATION=1 RUN_WAREHOUSE_INTEGRATION=1 RUN_ORCHESTRATION_INTEGRATION=1 python -m unittest discover -s tests -v
+```
+
+The verified M05 environment completed all 47 Python and live integration tests successfully.
 
 ## Stopping and restarting
 
-Stop the containers while preserving all named-volume data:
+Stop the complete platform while preserving all named-volume data:
 
 ```bash
-docker compose down
+docker compose -f compose.yaml -f compose.airflow.yaml down
 ```
 
-Restart the platform:
+Restart the core services, warehouse and Airflow components:
 
 ```bash
-docker compose up -d postgres kafka connect
+docker compose -f compose.yaml -f compose.airflow.yaml up -d postgres warehouse kafka connect airflow-apiserver airflow-scheduler airflow-dag-processor
 python scripts/register_connector.py
+```
+
+Run Spark Bronze ingestion when new Kafka events need to be processed:
+
+```bash
 docker compose --profile spark run --rm spark
 ```
 
-Checkpoints ensure the Spark job processes only Kafka events that were not previously committed.
+Spark checkpoints preserve committed Kafka offsets, the warehouse loader compares deterministic event IDs, and the dbt daily mart replaces only the selected incremental or backfill dates.
 
-To delete all Docker volumes and rebuild from an empty environment:
+To permanently delete the local named volumes and rebuild from an empty environment:
 
 ```bash
-docker compose down -v
+docker compose -f compose.yaml -f compose.airflow.yaml down -v
 ```
 
-Warning: `docker compose down -v` permanently removes the local PostgreSQL, Kafka, Bronze, quarantine, Spark checkpoint and dependency-cache volumes.
+Warning: the `down -v` command permanently removes the operational PostgreSQL data, analytical warehouse, Airflow metadata database, Kafka data, Bronze storage, quarantine data, Spark checkpoints and dependency-cache volumes.
 
 ## Project structure
 
 ```text
+Dockerfile.airflow
+Dockerfile.dbt
+compose.airflow.yaml
+compose.yaml
+
+airflow/
+  dags/
+    commerce_incremental_pipeline.py
+
+dbt/
+  macros/
+  models/
+    intermediate/
+    marts/
+    staging/
+  snapshots/
+  tests/
+
+docs/evaluation/
+  AIRFLOW_BACKFILL_M05.md
+  CDC_KAFKA_M02.md
+  SOURCE_M01.md
+  SPARK_BRONZE_M03.md
+  WAREHOUSE_DBT_M04.md
+
 infrastructure/
   debezium/
-  postgres/
+  postgres/init/
+  warehouse/init/
 
 scripts/
+  load_bronze_to_warehouse.py
   profile_bronze.py
   profile_cdc.py
+  profile_orchestration.py
   profile_source.py
+  profile_warehouse.py
   register_connector.py
   run_bronze_stream.py
   seed_source.py
   spark_kafka_smoke.py
   verify_cdc_operations.py
   wait_for_postgres.py
+  wait_for_warehouse.py
 
 src/commerce_pipeline/
   bronze.py
   cdc.py
   database.py
+  orchestration.py
   source_data.py
 
 tests/
   test_bronze.py
   test_cdc.py
   test_cdc_integration.py
+  test_orchestration.py
+  test_orchestration_integration.py
   test_package.py
   test_postgres_integration.py
   test_source_data.py
   test_spark_bronze_integration.py
+  test_warehouse_integration.py
 ```
 
 ## Evidence
@@ -389,6 +549,7 @@ Verified measurements and limitations are recorded in:
 - `docs/evaluation/CDC_KAFKA_M02.md`
 - `docs/evaluation/SPARK_BRONZE_M03.md`
 - `docs/evaluation/WAREHOUSE_DBT_M04.md`
+- `docs/evaluation/AIRFLOW_BACKFILL_M05.md`
 
 Only results marked verified in `METRICS.md` should be used in portfolio or resume claims.
 
@@ -396,6 +557,6 @@ Only results marked verified in `METRICS.md` should be used in portfolio or resu
 
 This project currently uses controlled synthetic commerce data and a local Docker environment.
 
-The completed milestones through M04 verify relational source design, CDC, Kafka transport, Spark processing, checkpoint recovery, Bronze storage, warehouse loading, SCD Type 2 history, dimensional modeling and exact financial reconciliation.
+The completed milestones through M05 verify relational source design, CDC, Kafka transport, Spark processing, checkpoint recovery, Bronze storage, warehouse loading, dbt transformations, SCD Type 2 history, dimensional modeling, exact financial reconciliation, Airflow orchestration, date-range backfills, pipeline auditing and controlled failure recovery.
 
-They do not yet prove production-cluster scalability, cloud-object-storage performance or internet-scale throughput.
+They do not yet prove production-cluster scalability, managed-Airflow behavior, cloud-object-storage performance or internet-scale throughput. The local Airflow environment mounts the Docker socket for development orchestration and is not presented as a production security design.
