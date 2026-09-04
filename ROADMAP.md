@@ -172,16 +172,42 @@
 - The complete backfill dbt build passed 115/115 resources.
 - The complete Python and live integration suite passed 47/47 tests in 33.921 seconds.
 
-## M06 - Reliability and observability
+## M06 - Reliability and observability - Complete
 
-- Measure data freshness, processing latency and throughput.
-- Detect source-to-Bronze and Bronze-to-warehouse differences.
-- Simulate late and out-of-order events.
-- Simulate compatible and incompatible schema changes.
-- Verify checkpoint recovery after controlled interruption.
-- Record failed records and failure reasons.
-- Add operational health and reconciliation reporting.
-- Measure recovery time after a controlled failure.
+- Added reusable reliability and reconciliation policy functions.
+- Added live Bronze storage profiling to operational validation.
+- Added source-to-current-state and Bronze-to-warehouse reconciliation.
+- Added freshness, latency and throughput measurements.
+- Added PostgreSQL, Kafka, Debezium and Airflow health reporting.
+- Added late and out-of-order event classification.
+- Added compatible and incompatible schema-change validation.
+- Added quarantine counts and failure-reason reporting.
+- Verified Spark checkpoint recovery after a controlled Kafka outage.
+- Added deterministic reliability scenario verification.
+- Added reliability unit and live integration tests.
+- Documented verified local reliability and recovery measurements.
+
+### Verified M06 outcome
+
+- 12/12 final operational reliability checks passed.
+- 26,291 live Bronze events reconciled with 26,291 warehouse events.
+- Zero missing, unexpected or duplicate warehouse events.
+- Zero null required warehouse metadata values.
+- All six reconstructed current-state counts matched the source.
+- Eight quarantined records retained an `unsupported_operation` reason.
+- All six expected Kafka topics were present.
+- PostgreSQL, Kafka, Debezium and Airflow components were healthy.
+- The five-minute event-lateness policy identified on-time, out-of-order and late events correctly.
+- Additive schema changes were accepted.
+- Missing or type-invalid primary keys were rejected.
+- A simulated three-record target deficit was detected.
+- Controlled Kafka interruption caused Spark to fail without advancing its checkpoint.
+- Checkpoint recovery processed exactly one pending event with zero duplicates.
+- Measured checkpoint recovery time was 33.221 seconds.
+- Final warehouse data age was 97.584 seconds against an 86,400-second freshness SLO.
+- Average measured Debezium connector latency was 869.283 milliseconds.
+- The final dbt build passed 115/115 resources.
+- The complete M01-M06 Python and live integration suite passed 68/68 tests in 51.457 seconds.
 
 ## M07 - Demonstration, deployment and CI
 

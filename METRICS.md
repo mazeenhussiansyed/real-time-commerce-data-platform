@@ -188,15 +188,58 @@ Only rows marked **Yes** may be used as measured project evidence.
 | Complete M05 Python suite | Unit plus all live integrations | 47/47 passed | complete live test command | Yes, 2026-09-03 |
 | Complete M05 test duration | Local Docker environment | 33.921 seconds | complete live test command | Yes, 2026-09-03 |
 
-## Planned reliability metrics
+## M06 reliability and observability verification
+
+| Metric | Configuration | Result | Evidence command | Verified |
+|---|---|---:|---|---|
+| Final operational checks | Live platform profile | 12/12 passed | `python scripts/profile_reliability.py` | Yes, 2026-09-04 |
+| Live Bronze events | Parquet storage | 26,291 | reliability profile | Yes, 2026-09-04 |
+| Warehouse events | `raw.bronze_events` | 26,291 | reliability profile | Yes, 2026-09-04 |
+| Bronze-to-warehouse difference | Live counts | 0 | reliability profile | Yes, 2026-09-04 |
+| Missing warehouse events | Live event reconciliation | 0 | reliability profile | Yes, 2026-09-04 |
+| Unexpected warehouse events | Live event reconciliation | 0 | reliability profile | Yes, 2026-09-04 |
+| Duplicate warehouse event IDs | Raw warehouse events | 0 | reliability profile | Yes, 2026-09-04 |
+| Null required warehouse metadata | Raw warehouse events | 0 | reliability profile | Yes, 2026-09-04 |
+| Current-state table differences | Six source tables | 0 | reliability profile | Yes, 2026-09-04 |
+| Quarantined records | Bronze quarantine | 8 | Bronze profile | Yes, 2026-09-04 |
+| Quarantine failure reason | All quarantined records | `unsupported_operation` | Bronze profile | Yes, 2026-09-04 |
+| Expected Kafka topics present | Six CDC topics | 6/6 | reliability profile | Yes, 2026-09-04 |
+| Healthy operational components | PostgreSQL, Kafka, Debezium and Airflow | 8/8 | reliability profile | Yes, 2026-09-04 |
+| Observed baseline out-of-order events | Accumulated Bronze partitions | 0 | reliability profile | Yes, 2026-09-04 |
+| Allowed lateness | Reliability policy | 300 seconds | scenario runner | Yes, 2026-09-04 |
+| Simulated out-of-order delay | Within allowed lateness | 60 seconds | scenario runner | Yes, 2026-09-04 |
+| Simulated late-event delay | Backfill required | 7,200 seconds | scenario runner | Yes, 2026-09-04 |
+| Compatible schema changes | Unchanged and additive | 2/2 detected | scenario runner | Yes, 2026-09-04 |
+| Incompatible schema changes | Missing key and invalid key type | 2/2 detected | scenario runner | Yes, 2026-09-04 |
+| Simulated missing target records | Three-record deficit | 3 detected | scenario runner | Yes, 2026-09-04 |
+| Checkpoint recovery duration | Kafka restart through successful Spark completion | 33.221 seconds | controlled recovery run | Yes, 2026-09-04 |
+| Events processed after recovery | Existing Spark checkpoint | 1 | recovery stream result | Yes, 2026-09-04 |
+| Duplicate events after recovery | Existing Spark checkpoint | 0 | recovery stream result | Yes, 2026-09-04 |
+| Freshness SLO | Local evaluation threshold | 86,400 seconds | reliability profile | Yes, 2026-09-04 |
+| Warehouse data age | Final synchronized warehouse | 97.584 seconds | reliability profile | Yes, 2026-09-04 |
+| Successful pipeline age | Latest audited Airflow success | 25,660.734 seconds | reliability profile | Yes, 2026-09-04 |
+| Average connector latency | 26,291 accumulated events | 869.283 milliseconds | reliability profile | Yes, 2026-09-04 |
+| Maximum connector latency | 26,291 accumulated events | 1,460 milliseconds | reliability profile | Yes, 2026-09-04 |
+| Average Bronze processing latency | Accumulated local history, not steady state | 28,650,808.150 milliseconds | reliability profile | Yes, 2026-09-04 |
+| Average warehouse-load latency | Accumulated local history, not steady state | 4,412,038.688 milliseconds | reliability profile | Yes, 2026-09-04 |
+| Average end-to-end latency | Accumulated local history, not steady state | 33,063,716.121 milliseconds | reliability profile | Yes, 2026-09-04 |
+| Reliability policy unit tests | Deterministic policies | 15/15 passed | reliability unit tests | Yes, 2026-09-04 |
+| Reliability live integration tests | Live operational profile | 6/6 passed | reliability integration tests | Yes, 2026-09-04 |
+| Reliability integration duration | Live Docker environment | 14.254 seconds | reliability integration tests | Yes, 2026-09-04 |
+| Complete M01-M06 Python suite | Unit plus all live integrations | 68/68 passed | complete live test command | Yes, 2026-09-04 |
+| Complete M06 test duration | Local Docker environment | 51.457 seconds | complete live test command | Yes, 2026-09-04 |
+| Final M06 dbt build | Models, snapshot and tests | 115/115 passed | final `dbt build` | Yes, 2026-09-04 |
+| Final M06 dbt duration | Warm local warehouse | 2.93 seconds | final `dbt build` | Yes, 2026-09-04 |
+
+Historical Bronze, warehouse-load and end-to-end latency aggregates include the original snapshot and events intentionally left at rest between milestone runs. They must not be represented as steady-state production latency.
+
+## Planned M07 verification
 
 | Metric | Result | Evidence command | Verified |
 |---|---:|---|---|
-| Late-event handling | Not measured | future M06 evaluation | No |
-| Schema-change handling | Not measured | future M06 evaluation | No |
-| Controlled failure recovery time | Not measured | future M06 benchmark | No |
-| Source-to-warehouse freshness | Not measured | future M06 benchmark | No |
 | Final CI verification | Not measured | future M07 workflow | No |
+| Fresh-machine deployment | Not measured | future M07 evaluation | No |
+| Operational dashboard | Not measured | future M07 evaluation | No |
 
 ## Integrity rules
 

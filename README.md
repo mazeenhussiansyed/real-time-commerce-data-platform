@@ -2,11 +2,11 @@
 
 A Data Engineering portfolio project that captures PostgreSQL commerce changes in real time, publishes them through Debezium and Apache Kafka, and processes them with Apache Spark Structured Streaming into governed Bronze Parquet storage and a tested PostgreSQL analytical warehouse transformed with dbt.
 
-Apache Airflow orchestrates service validation, incremental processing, warehouse loading, dbt transformations, controlled date-range backfills, failure recovery and pipeline-run auditing.
+Apache Airflow orchestrates service validation, incremental processing, warehouse loading, dbt transformations, controlled date-range backfills, failure recovery and pipeline-run auditing. Live reliability profiles reconcile every layer and report freshness, latency, service health and quarantine reasons.
 
 ## Current status
 
-Milestones M00 through M05 are complete:
+Milestones M00 through M06 are complete:
 
 - project scope and evidence contract;
 - deterministic PostgreSQL commerce source;
@@ -33,9 +33,13 @@ Milestones M00 through M05 are complete:
 - validated incremental and date-range backfill modes;
 - retries, timeouts and failure callbacks;
 - pipeline-run auditing and controlled failure recovery;
+- live source, Bronze and warehouse reconciliation;
+- operational freshness, latency and service-health profiling;
+- late-event and schema-compatibility policies;
+- controlled checkpoint interruption and recovery verification;
 - unit and live integration testing.
 
-M06 and M07 will add reliability testing, operational observability, CI, deployment verification and final demonstration evidence.
+M07 will add CI, deployment verification, an operational dashboard and final demonstration evidence.
 
 ## Architecture
 
@@ -225,6 +229,36 @@ M04 adds duplicate-safe Spark JDBC loading, a PostgreSQL analytical warehouse, d
 | Python and live integration tests | 47/47 passed |
 
 M05 adds an Apache Airflow orchestration stack, an eight-task incremental pipeline, validated date-range backfills, retries, timeouts, failure callbacks and durable pipeline-run auditing. A controlled dbt failure identified `run_dbt_build` as the failed task, and a corrected backfill rerun recovered successfully without duplicate reporting dates.
+
+## Verified M06 reliability and observability results
+
+| Result | Verified value |
+|---|---:|
+| Final operational checks | 12/12 passed |
+| Live Bronze events | 26,291 |
+| Warehouse events | 26,291 |
+| Missing or unexpected events | 0 |
+| Duplicate warehouse event IDs | 0 |
+| Null required metadata values | 0 |
+| Current-state table differences | 0 |
+| Quarantined records | 8 |
+| Recorded quarantine reason | `unsupported_operation` |
+| Healthy operational components | 8/8 |
+| Observed baseline out-of-order events | 0 |
+| Allowed lateness threshold | 300 seconds |
+| Controlled checkpoint recovery | 33.221 seconds |
+| Events processed after recovery | 1 |
+| Duplicate recovery events | 0 |
+| Final warehouse data age | 97.584 seconds |
+| Freshness SLO | 86,400 seconds |
+| Average connector latency | 869.283 milliseconds |
+| Reliability unit tests | 15/15 passed |
+| Reliability integration tests | 6/6 passed |
+| Complete Python and live integration suite | 68/68 passed |
+| Complete suite duration | 51.457 seconds |
+| Final dbt build | 115/115 passed |
+
+M06 adds live cross-layer reconciliation, operational health and freshness reporting, event-order policies, schema-compatibility checks, quarantine-reason reporting and controlled Spark checkpoint-recovery evidence. Historical accumulated latency measurements are documented separately and are not presented as steady-state production performance.
 
 ## Bronze event metadata
 
@@ -417,6 +451,7 @@ After the DAG run completes, validate its audit records and reconciled daily mar
 
 ```bash
 python scripts/profile_orchestration.py
+python scripts/profile_reliability.py
 ```
 
 ## Running tests
@@ -436,10 +471,10 @@ python -m unittest discover -s tests -p "test_orchestration.py" -v
 After the core services, warehouse and Airflow stack are running, execute the complete live integration suite:
 
 ```bash
-env RUN_POSTGRES_INTEGRATION=1 RUN_CDC_INTEGRATION=1 RUN_SPARK_INTEGRATION=1 RUN_WAREHOUSE_INTEGRATION=1 RUN_ORCHESTRATION_INTEGRATION=1 python -m unittest discover -s tests -v
+env RUN_POSTGRES_INTEGRATION=1 RUN_CDC_INTEGRATION=1 RUN_SPARK_INTEGRATION=1 RUN_WAREHOUSE_INTEGRATION=1 RUN_ORCHESTRATION_INTEGRATION=1 RUN_RELIABILITY_INTEGRATION=1 python -m unittest discover -s tests -v
 ```
 
-The verified M05 environment completed all 47 Python and live integration tests successfully.
+The verified M06 environment completed all 68 Python and live integration tests successfully.
 
 ## Stopping and restarting
 
@@ -496,6 +531,7 @@ dbt/
 docs/evaluation/
   AIRFLOW_BACKFILL_M05.md
   CDC_KAFKA_M02.md
+  RELIABILITY_OBSERVABILITY_M06.md
   SOURCE_M01.md
   SPARK_BRONZE_M03.md
   WAREHOUSE_DBT_M04.md
@@ -510,6 +546,7 @@ scripts/
   profile_bronze.py
   profile_cdc.py
   profile_orchestration.py
+  profile_reliability.py
   profile_source.py
   profile_warehouse.py
   register_connector.py
@@ -517,6 +554,7 @@ scripts/
   seed_source.py
   spark_kafka_smoke.py
   verify_cdc_operations.py
+  verify_reliability_scenarios.py
   wait_for_postgres.py
   wait_for_warehouse.py
 
@@ -525,6 +563,7 @@ src/commerce_pipeline/
   cdc.py
   database.py
   orchestration.py
+  reliability.py
   source_data.py
 
 tests/
@@ -533,6 +572,8 @@ tests/
   test_cdc_integration.py
   test_orchestration.py
   test_orchestration_integration.py
+  test_reliability.py
+  test_reliability_integration.py
   test_package.py
   test_postgres_integration.py
   test_source_data.py
@@ -550,6 +591,7 @@ Verified measurements and limitations are recorded in:
 - `docs/evaluation/SPARK_BRONZE_M03.md`
 - `docs/evaluation/WAREHOUSE_DBT_M04.md`
 - `docs/evaluation/AIRFLOW_BACKFILL_M05.md`
+- `docs/evaluation/RELIABILITY_OBSERVABILITY_M06.md`
 
 Only results marked verified in `METRICS.md` should be used in portfolio or resume claims.
 
@@ -557,6 +599,6 @@ Only results marked verified in `METRICS.md` should be used in portfolio or resu
 
 This project currently uses controlled synthetic commerce data and a local Docker environment.
 
-The completed milestones through M05 verify relational source design, CDC, Kafka transport, Spark processing, checkpoint recovery, Bronze storage, warehouse loading, dbt transformations, SCD Type 2 history, dimensional modeling, exact financial reconciliation, Airflow orchestration, date-range backfills, pipeline auditing and controlled failure recovery.
+The completed milestones through M06 verify relational source design, CDC, Kafka transport, Spark processing, checkpoint recovery, Bronze storage, warehouse loading, dbt transformations, SCD Type 2 history, dimensional modeling, exact financial reconciliation, Airflow orchestration, date-range backfills, pipeline auditing, cross-layer reconciliation, freshness and latency measurement, schema policies and controlled failure recovery.
 
-They do not yet prove production-cluster scalability, managed-Airflow behavior, cloud-object-storage performance or internet-scale throughput. The local Airflow environment mounts the Docker socket for development orchestration and is not presented as a production security design.
+They do not yet prove production-cluster scalability, managed-Airflow behavior, distributed fault tolerance, multi-region recovery, cloud-object-storage performance or internet-scale throughput. The local Airflow environment mounts the Docker socket for development orchestration and is not presented as a production security design.
