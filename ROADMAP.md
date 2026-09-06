@@ -211,14 +211,20 @@
 
 ## M07 - Demonstration, deployment and CI
 
-- Containerize the complete project stack.
-- Add service health checks and startup dependencies.
-- Add GitHub Actions verification.
-- Create an operational data-quality dashboard.
-- Document a fresh-machine quick start.
-- Record final verified metrics.
-- Prepare the interview demonstration.
-- Prepare accurate resume evidence.
+Status: Complete locally on 2026-09-06.
+
+- Containerized and verified the complete project stack.
+- Added service health checks and startup dependencies.
+- Added GitHub Actions verification for Python 3.12-3.14.
+- Created a self-contained operational HTML/JSON dashboard.
+- Verified an isolated fresh deployment with dedicated ports,
+  network and persistent volumes.
+- Verified all eight Airflow tasks in incremental and backfill runs.
+- Passed 58 non-integration tests and 33 live integration tests.
+- Recorded final deployment, reliability and dashboard evidence.
+- Prepared defensible interview and resume evidence.
+
+Hosted GitHub Actions verification remains the final post-push check.
 
 ## Definition of done
 

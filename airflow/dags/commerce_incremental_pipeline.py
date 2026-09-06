@@ -27,6 +27,28 @@ if not PROJECT_HOST_PATH:
     )
 
 
+DOCKER_NETWORK = os.environ.get(
+    "COMMERCE_DOCKER_NETWORK",
+    "real-time-commerce_default",
+)
+SPARK_IVY_VOLUME = os.environ.get(
+    "COMMERCE_SPARK_IVY_VOLUME",
+    "commerce-spark-ivy",
+)
+BRONZE_VOLUME = os.environ.get(
+    "COMMERCE_BRONZE_VOLUME",
+    "commerce-bronze-data",
+)
+QUARANTINE_VOLUME = os.environ.get(
+    "COMMERCE_QUARANTINE_VOLUME",
+    "commerce-quarantine-data",
+)
+CHECKPOINT_VOLUME = os.environ.get(
+    "COMMERCE_CHECKPOINT_VOLUME",
+    "commerce-spark-checkpoints",
+)
+
+
 SPARK_ENVIRONMENT = {
     "HOME": "/tmp",
     "PYTHONPATH": "/workspace/src",
@@ -50,22 +72,22 @@ SPARK_MOUNTS = [
         read_only=True,
     ),
     Mount(
-        source="commerce-spark-ivy",
+        source=SPARK_IVY_VOLUME,
         target="/tmp/.ivy2",
         type="volume",
     ),
     Mount(
-        source="commerce-bronze-data",
+        source=BRONZE_VOLUME,
         target="/workspace/data/landing",
         type="volume",
     ),
     Mount(
-        source="commerce-quarantine-data",
+        source=QUARANTINE_VOLUME,
         target="/workspace/data/quarantine",
         type="volume",
     ),
     Mount(
-        source="commerce-spark-checkpoints",
+        source=CHECKPOINT_VOLUME,
         target="/workspace/data/checkpoints",
         type="volume",
     ),
@@ -106,7 +128,7 @@ def spark_task(
         task_id=task_id,
         image="apache/spark:4.2.0-python3",
         docker_url="unix://var/run/docker.sock",
-        network_mode="real-time-commerce_default",
+        network_mode=DOCKER_NETWORK,
         api_version="auto",
         entrypoint=["/opt/spark/bin/spark-submit"],
         command=command,
@@ -261,7 +283,7 @@ def build_commerce_incremental_pipeline():
         task_id="run_dbt_build",
         image="commerce-dbt:1.11",
         docker_url="unix://var/run/docker.sock",
-        network_mode="real-time-commerce_default",
+        network_mode=DOCKER_NETWORK,
         api_version="auto",
         command=(
             """

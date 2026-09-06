@@ -6,7 +6,7 @@ Apache Airflow orchestrates service validation, incremental processing, warehous
 
 ## Current status
 
-Milestones M00 through M06 are complete:
+Milestones M00 through M07 are complete:
 
 - project scope and evidence contract;
 - deterministic PostgreSQL commerce source;
@@ -37,9 +37,14 @@ Milestones M00 through M06 are complete:
 - operational freshness, latency and service-health profiling;
 - late-event and schema-compatibility policies;
 - controlled checkpoint interruption and recovery verification;
-- unit and live integration testing.
+- unit and live integration testing;
+- isolated fresh-stack deployment verification;
+- environment-specific Airflow network and volume isolation;
+- automated deployment-contract and live-health validation;
+- a self-contained operational HTML/JSON dashboard;
+- GitHub Actions validation across Python 3.12, 3.13 and 3.14.
 
-M07 will add CI, deployment verification, an operational dashboard and final demonstration evidence.
+All planned implementation milestones are complete. The CI workflow is locally validated and will receive final hosted verification after the M07 commit is pushed to GitHub.
 
 ## Architecture
 

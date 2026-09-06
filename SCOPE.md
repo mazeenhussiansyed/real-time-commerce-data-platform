@@ -28,7 +28,7 @@ Analytics teams need timely reporting without running expensive analytical queri
 - Kafka event transportation.
 - Spark Structured Streaming.
 - Immutable Bronze event storage.
-- Incremental Snowflake loading.
+- Incremental PostgreSQL analytical-warehouse loading.
 - dbt transformations, tests and documentation.
 - Dimensional facts and dimensions.
 - SCD Type 2 historical tracking.
@@ -38,7 +38,7 @@ Analytics teams need timely reporting without running expensive analytical queri
 - Data freshness and pipeline-run metrics.
 - Docker Compose local deployment.
 - GitHub Actions verification.
-- Power BI operational reporting.
+- Self-contained HTML/JSON operational reporting.
 
 ## Out of scope
 
@@ -82,5 +82,5 @@ Targets and planned architecture are not measured achievements.
 - Pipeline latency, throughput and freshness are measured.
 - Docker Compose starts the complete local platform.
 - CI runs the automated verification suite.
-- Power BI consumes analytics-ready tables.
+- The operational dashboard presents validated platform health and data-quality evidence.
 - Resume claims use only verified evidence.

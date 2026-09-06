@@ -256,7 +256,8 @@ def main() -> None:
             and source_tables == EXPECTED_TABLES
             and duplicate_event_ids == 0
             and total_null_metadata == 0
-            and quarantine_records >= 1
+            and quarantine_records
+            == quarantine_unique_event_ids
             and quarantine_duplicate_event_ids == 0
         )
 
