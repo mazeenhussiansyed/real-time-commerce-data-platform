@@ -246,7 +246,7 @@ Historical Bronze, warehouse-load and end-to-end latency aggregates include the 
 | Reliability integration | 6/6 passed | live reliability suite | Yes, 2026-09-06 |
 | Dashboard integration | 6/6 passed | live dashboard suite | Yes, 2026-09-06 |
 | Python CI matrix | 3.12, 3.13 and 3.14 configured | `.github/workflows/ci.yml` | Yes, 2026-09-06 |
-| Hosted GitHub Actions run | Pending first M07 push | GitHub Actions | No |
+| Hosted GitHub Actions run | 4/4 jobs passed | workflow run 34046268064 | Yes, 2026-09-06 |
 
 ## Integrity rules
 

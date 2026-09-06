@@ -44,7 +44,7 @@ Milestones M00 through M07 are complete:
 - a self-contained operational HTML/JSON dashboard;
 - GitHub Actions validation across Python 3.12, 3.13 and 3.14.
 
-All planned implementation milestones are complete. The CI workflow is locally validated and will receive final hosted verification after the M07 commit is pushed to GitHub.
+All planned implementation milestones are complete. Local validation and the hosted GitHub Actions workflow both passed.
 
 ## Architecture
 
