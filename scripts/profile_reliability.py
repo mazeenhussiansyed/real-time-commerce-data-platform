@@ -31,6 +31,34 @@ FRESHNESS_SLO_SECONDS = int(
 )
 
 
+def build_compose_command() -> list[str]:
+    command = ["docker", "compose"]
+
+    project_name = os.getenv(
+        "COMMERCE_COMPOSE_PROJECT_NAME"
+    )
+    if project_name:
+        command.extend(["-p", project_name])
+
+    command.extend(
+        [
+            "-f",
+            "compose.yaml",
+            "-f",
+            "compose.airflow.yaml",
+        ]
+    )
+
+    override_file = os.getenv(
+        "COMMERCE_COMPOSE_OVERRIDE_FILE"
+    )
+    if override_file:
+        command.extend(["-f", override_file])
+
+    command.extend(["--profile", "spark"])
+    return command
+
+
 def json_default(value: Any) -> Any:
     if isinstance(value, Decimal):
         return float(value)
@@ -148,11 +176,7 @@ def http_json(url: str) -> dict[str, Any]:
 
 
 def fetch_live_bronze_profile() -> dict[str, Any]:
-    command = [
-        "docker",
-        "compose",
-        "--profile",
-        "spark",
+    command = build_compose_command() + [
         "run",
         "--rm",
         "spark",

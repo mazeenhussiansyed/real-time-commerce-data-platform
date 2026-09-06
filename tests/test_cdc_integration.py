@@ -27,6 +27,7 @@ def run_json_script(
     script_name: str,
     *arguments: str,
     timeout: float = 90.0,
+    result_prefix: str | None = None,
 ) -> dict[str, object]:
     completed = subprocess.run(
         [
@@ -49,8 +50,29 @@ def run_json_script(
             f"stderr:\n{completed.stderr}"
         )
 
+    output = completed.stdout.strip()
+
+    if result_prefix is not None:
+        matching_lines = [
+            line
+            for line in output.splitlines()
+            if line.startswith(result_prefix)
+        ]
+
+        if not matching_lines:
+            raise AssertionError(
+                f"{script_name} did not return "
+                f"{result_prefix!r}\n"
+                f"stdout:\n{completed.stdout}\n"
+                f"stderr:\n{completed.stderr}"
+            )
+
+        output = matching_lines[-1].removeprefix(
+            result_prefix
+        )
+
     try:
-        payload = json.loads(completed.stdout)
+        payload = json.loads(output)
     except json.JSONDecodeError as exc:
         raise AssertionError(
             f"{script_name} did not return valid JSON\n"
@@ -76,6 +98,7 @@ class CDCIntegrationTests(unittest.TestCase):
         cls.profile = run_json_script(
             "profile_cdc.py",
             timeout=60.0,
+            result_prefix="CDC_PROFILE_RESULT=",
         )
 
     def test_connector_and_replication_are_healthy(

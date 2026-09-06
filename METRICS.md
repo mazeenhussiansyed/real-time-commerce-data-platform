@@ -233,13 +233,20 @@ Only rows marked **Yes** may be used as measured project evidence.
 
 Historical Bronze, warehouse-load and end-to-end latency aggregates include the original snapshot and events intentionally left at rest between milestone runs. They must not be represented as steady-state production latency.
 
-## Planned M07 verification
+## M07 verification
 
-| Metric | Result | Evidence command | Verified |
+| Metric | Result | Evidence | Verified |
 |---|---:|---|---|
-| Final CI verification | Not measured | future M07 workflow | No |
-| Fresh-machine deployment | Not measured | future M07 evaluation | No |
-| Operational dashboard | Not measured | future M07 evaluation | No |
+| Non-integration Python tests | 58/58 passed | `unittest discover` with 33 integrations skipped | Yes, 2026-09-06 |
+| Live integration tests | 33/33 passed | PostgreSQL, CDC, Spark, warehouse, orchestration, reliability and dashboard suites | Yes, 2026-09-06 |
+| Fresh CDC snapshot | 26,249/26,249 events | `CDC_PROFILE_RESULT` | Yes, 2026-09-04 |
+| Fresh deployment checks | 10/10 passed | `DEPLOYMENT_VALIDATION_RESULT` | Yes, 2026-09-04 |
+| Fresh Airflow pipeline | 8/8 tasks passed | incremental and backfill DAG runs | Yes, 2026-09-06 |
+| Final fresh dbt build | 115/115 passed | Airflow `run_dbt_build` log | Yes, 2026-09-06 |
+| Reliability integration | 6/6 passed | live reliability suite | Yes, 2026-09-06 |
+| Dashboard integration | 6/6 passed | live dashboard suite | Yes, 2026-09-06 |
+| Python CI matrix | 3.12, 3.13 and 3.14 configured | `.github/workflows/ci.yml` | Yes, 2026-09-06 |
+| Hosted GitHub Actions run | 4/4 jobs passed | workflow run 34046268064 | Yes, 2026-09-06 |
 
 ## Integrity rules
 

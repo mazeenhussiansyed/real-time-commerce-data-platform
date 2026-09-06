@@ -177,7 +177,13 @@ def main() -> None:
         "replication": replication,
     }
 
-    print(json.dumps(result, indent=2))
+    print(
+        "CDC_PROFILE_RESULT="
+        + json.dumps(result, sort_keys=True)
+    )
+
+    if not valid:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

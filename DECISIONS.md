@@ -53,3 +53,22 @@
 **Decision:** Record a technology or result on the resume only after reproducible verification.
 
 **Reason:** Planned architecture is not equivalent to completed engineering work.
+
+## ADR-010 - Deployment environments are isolated
+
+**Decision:** Resolve Docker networks, volumes, Compose projects and
+container identities from deployment configuration while preserving
+stable local defaults.
+
+**Reason:** Fresh deployment validation must not read data or services
+from an existing environment. Explicit isolation makes test evidence
+reproducible and prevents cross-environment contamination.
+
+## ADR-011 - Operational reporting is self-contained
+
+**Decision:** Generate versionable HTML and JSON operational-dashboard
+artifacts from live reliability and deployment validation results.
+
+**Reason:** A self-contained dashboard demonstrates service health,
+freshness, reconciliation and quarantine status without claiming an
+external BI implementation that has not been verified.

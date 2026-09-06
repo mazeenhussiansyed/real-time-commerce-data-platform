@@ -1,0 +1,83 @@
+x-fresh-airflow-environment: &fresh-airflow-environment
+  COMMERCE_DOCKER_NETWORK: commerce-m07-fresh_default
+  COMMERCE_SPARK_IVY_VOLUME: commerce-m07-fresh-spark-ivy
+  COMMERCE_BRONZE_VOLUME: commerce-m07-fresh-bronze-data
+  COMMERCE_QUARANTINE_VOLUME: commerce-m07-fresh-quarantine-data
+  COMMERCE_CHECKPOINT_VOLUME: commerce-m07-fresh-spark-checkpoints
+
+services:
+  postgres:
+    container_name: commerce-m07-fresh-postgres
+    ports: !override
+      - "127.0.0.1:15433:5432"
+
+  warehouse:
+    container_name: commerce-m07-fresh-warehouse
+    ports: !override
+      - "127.0.0.1:15434:5432"
+
+  kafka:
+    container_name: commerce-m07-fresh-kafka
+    ports: !override
+      - "127.0.0.1:39092:29092"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: >-
+        INTERNAL://kafka:9092,
+        EXTERNAL://localhost:39092
+
+  connect:
+    container_name: commerce-m07-fresh-connect
+    ports: !override
+      - "127.0.0.1:18083:8083"
+
+  airflow-db:
+    container_name: commerce-m07-fresh-airflow-db
+    ports: !override
+      - "127.0.0.1:15435:5432"
+
+  airflow-init:
+    container_name: commerce-m07-fresh-airflow-init
+    environment:
+      <<: *fresh-airflow-environment
+
+  airflow-apiserver:
+    container_name: commerce-m07-fresh-airflow-apiserver
+    environment:
+      <<: *fresh-airflow-environment
+    ports: !override
+      - "127.0.0.1:18080:8080"
+
+  airflow-scheduler:
+    container_name: commerce-m07-fresh-airflow-scheduler
+    environment:
+      <<: *fresh-airflow-environment
+
+  airflow-dag-processor:
+    container_name: commerce-m07-fresh-airflow-dag-processor
+    environment:
+      <<: *fresh-airflow-environment
+
+volumes:
+  commerce_postgres_data:
+    name: commerce-m07-fresh-postgres-data
+
+  commerce_warehouse_data:
+    name: commerce-m07-fresh-warehouse-data
+
+  commerce_kafka_data:
+    name: commerce-m07-fresh-kafka-data
+
+  commerce_airflow_metadata:
+    name: commerce-m07-fresh-airflow-metadata
+
+  commerce_bronze_data:
+    name: commerce-m07-fresh-bronze-data
+
+  commerce_quarantine_data:
+    name: commerce-m07-fresh-quarantine-data
+
+  commerce_spark_checkpoints:
+    name: commerce-m07-fresh-spark-checkpoints
+
+  commerce_spark_ivy:
+    name: commerce-m07-fresh-spark-ivy
